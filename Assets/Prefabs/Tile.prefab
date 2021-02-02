@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 212000010479004448}
   - component: {fileID: 61000013103663072}
   - component: {fileID: -9222286558991323372}
+  - component: {fileID: 797729221161100185}
   m_Layer: 0
   m_Name: Tile
   m_TagString: Untagged
@@ -121,3 +122,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3664d36cc9aaab44190f7869e01b9e34, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  selectedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+--- !u!95 &797729221161100185
+Animator:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000010131827792}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 76f95d438d4252a46be2078ee463926f, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 1
+  m_LinearVelocityBlending: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorControllerStateOnDisable: 0
