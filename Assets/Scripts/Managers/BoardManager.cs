@@ -1,4 +1,4 @@
-﻿using System;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Controllers;
@@ -16,9 +16,9 @@ namespace Managers
          * Elements
          */
         [Header("Tile config")] [SerializeField]
-        private List<TileSprite> characters = new List<TileSprite>();
+        private List<TileSprite> availableSpriteTiles = new List<TileSprite>();
 
-        private readonly List<Tile.TileType> currentAvailableCharacters = new List<Tile.TileType>();
+        private readonly List<Tile.TileType> _currentAvailableTileTypes = new List<Tile.TileType>();
 
 
         [Header("Board config")] [SerializeField]
@@ -29,16 +29,21 @@ namespace Managers
 
         private TileController[,] tiles;
 
-        public TileController SelectedTile { get; set; }
+        public TileController SelectedTile { get; private set; }
 
         public bool IsShifting { get; private set; }
+        public bool IsRefilling { get; private set; }
+
+        private int _clearedMatches = 0;
+        private int _allClearMatches = -1;
+        private bool HasClearedMatches => _clearedMatches == _allClearMatches;
 
         void Start()
         {
             instance = GetComponent<BoardManager>();
 
             tilesOffset = tile.GetComponent<SpriteRenderer>().bounds.size;
-            CreateBoard(tilesOffset.x, tilesOffset.y);
+            CreateBoard();
         }
 
         private void OnDestroy()
@@ -46,35 +51,47 @@ namespace Managers
             ClearBoard();
         }
 
+        private void FixedUpdate()
+        {
+            if (!HasClearedMatches) return;
+            _clearedMatches = 0;
+            StopCoroutine(FindNullTiles());
+            StartCoroutine(FindNullTiles());
+        }
+
         /**
-	 * Creates a Board starting from bottom left
-	 * And goes ahead completing row per row
-	 * X are the columns, Y are the rows
-	 */
-        private void CreateBoard(float xOffset, float yOffset)
+	    * Creates a Board starting from bottom left
+	    * And goes ahead completing row per row
+	    * X are the columns, Y are the rows
+	    */
+        private void CreateBoard()
         {
             tiles = new TileController[xSize, ySize];
 
+            for (int x = 0; x < xSize; x++)
+            for (int y = 0; y < ySize; y++)
+                CreateTile(x, y);
+        }
+
+        private void CreateTile(int x, int y)
+        {
             float startX = transform.position.x;
             float startY = transform.position.y;
 
-            for (int x = 0; x < xSize; x++)
-            {
-                for (int y = 0; y < ySize; y++)
-                {
-                    currentAvailableCharacters.Clear();
-                    GameObject newTile = Instantiate(tile,
-                        new Vector3(startX + (xOffset * x), startY + (yOffset * y), 0),
-                        tile.transform.rotation);
-                    var tileController = newTile.GetComponent<TileController>();
-                    tiles[x, y] = tileController;
-                    newTile.transform.parent = transform;
-                    TileSprite tileSprite = GetAvailableRandomTileSprite(x, y);
-                    newTile.GetComponent<SpriteRenderer>().sprite = tileSprite.sprite;
-                    tileController.Init(x, y, tileSprite.type);
-                    tileController.onSwapped += ClearAllMatchesForTile;
-                }
-            }
+            float xOffset = tilesOffset.x;
+            float yOffset = tilesOffset.y;
+
+            _currentAvailableTileTypes.Clear();
+            GameObject newTile = Instantiate(tile,
+                new Vector3(startX + (xOffset * x), startY + (yOffset * y), 0),
+                tile.transform.rotation);
+            var tileController = newTile.GetComponent<TileController>();
+            tiles[x, y] = tileController;
+            newTile.transform.parent = transform;
+            TileSprite tileSprite = GetAvailableRandomTileSprite(x, y);
+            newTile.GetComponent<SpriteRenderer>().sprite = tileSprite.sprite;
+            tileController.Init(x, y, tileSprite.type);
+            tileController.onTargetPositionReached += ProcessEndActionCallback;
         }
 
         private void ClearBoard()
@@ -85,86 +102,119 @@ namespace Managers
                 {
                     if (tiles[x, y] != null)
                     {
-                        tiles[x, y].onSwapped -= ClearAllMatchesForTile;
+                        tiles[x, y].onTargetPositionReached -= ProcessEndActionCallback;
                         tiles[x, y] = null;
                     }
                 }
             }
         }
 
-        /* public IEnumerator FindNullTiles()
-         {
-             for (int x = 0; x < xSize; x++)
-             {
-                 for (int y = 0; y < ySize; y++)
-                 {
-                     if (tiles[x, y].GetComponent<SpriteRenderer>().sprite == null)
-                     {
-                         yield return StartCoroutine(ShiftTilesDown(x, y));
-                         break;
-                     }
-                 }
-             }
- 
-             //Check if new matches have been formed
-             for (int x = 0; x < xSize; x++)
-             {
-                 for (int y = 0; y < ySize; y++)
-                 {
-                     tiles[x, y].GetComponent<TileController>().ClearAllMatches();
-                 }
-             }
-         }
- 
-         private IEnumerator ShiftTilesDown(int x, int yStart, float shiftDelay = .03f)
-         {
-             IsShifting = true;
-             List<SpriteRenderer> renders = new List<SpriteRenderer>();
-             int nullCount = 0;
- 
-             for (int y = yStart; y < ySize; y++)
-             {
-                 SpriteRenderer render = tiles[x, y].GetComponent<SpriteRenderer>();
-                 if (render.sprite == null)
-                     nullCount++;
-                 renders.Add(render);
-             }
- 
-             for (int i = 0; i < nullCount; i++)
-             {
-                 //GUIManager.instance.Score += 50;
-                 yield return new WaitForSeconds(shiftDelay);
-                 for (int k = 0; k < renders.Count - 1; k++)
-                 {
-                     renders[k].sprite = renders[k + 1].sprite;
-                     renders[k + 1].sprite = GetAvailableRandomSprite(x, ySize - 1);
-                 }
-             }
- 
-             IsShifting = false;
-         }
- */
+        private IEnumerator FindNullTiles()
+        {
+            for (int x = 0; x < xSize; x++)
+            {
+                for (int y = 0; y < ySize; y++)
+                {
+                    if (tiles[x, y] == null)
+                    {
+                        yield return StartCoroutine(ShiftDown(x, y));
+                        break;
+                    }
+                }
+            }
+
+            for (int x = 0; x < xSize; x++)
+            {
+                for (int y = 0; y < ySize; y++)
+                {
+                    if (tiles[x, y] == null)
+                    {
+                        yield return StartCoroutine(Refill(x, y));
+                        break;
+                    }
+                }
+            }
+
+            yield return StartCoroutine(ClearAllMatchesForBoard());
+        }
+
+        private IEnumerator ShiftDown(int x, int yStart, float shiftDelay = .03f)
+        {
+            IsShifting = true;
+            int nullCount = 0;
+
+            //GUIManager.instance.Score += 50;
+            yield return new WaitForSeconds(shiftDelay);
+
+            //shift down above match items
+            for (int y = yStart; y < ySize; ++y)
+            {
+                TileController controller = tiles[x, y];
+                if (controller == null)
+                {
+                    nullCount++;
+                }
+                else
+                {
+
+                    Vector3 shiftedPosition = controller.transform.position;
+                    shiftedPosition.y -= tilesOffset.y * nullCount;
+                    tiles[x, y - nullCount] = controller;
+                    tiles[x, y] = null;
+                    controller.UpdatePositionInBoard(x, y - nullCount);
+                    controller.SetAction(TileController.TileAction.Shift, shiftedPosition);
+                }
+            }
+
+            IsShifting = false;
+        }
+        
+        private IEnumerator Refill(int xStart, int yStart, float refillDelay = 0.2f)
+        {
+            IsRefilling = true;
+            yield return new WaitForSeconds(refillDelay);
+            for (int y = yStart; y < ySize; y++)
+                CreateTile(xStart, y);
+
+            IsRefilling = false;
+        }
+
         private TileSprite GetAvailableRandomTileSprite(int x, int y)
         {
-            currentAvailableCharacters.Clear();
-            currentAvailableCharacters.AddRange(characters.Select(tileSprite => tileSprite.type));
+            _currentAvailableTileTypes.Clear();
+            _currentAvailableTileTypes.AddRange(availableSpriteTiles.Select(tileSprite => tileSprite.type));
 
             if (x > 0 && tiles[x - 1, y] != null)
-                currentAvailableCharacters.Remove(tiles[x - 1, y].GetTileType());
+                _currentAvailableTileTypes.Remove(tiles[x - 1, y].GetTileType());
             if (x < xSize - 1 && tiles[x + 1, y] != null)
-                currentAvailableCharacters.Remove(tiles[x + 1, y].GetTileType());
+                _currentAvailableTileTypes.Remove(tiles[x + 1, y].GetTileType());
             if (y > 0 && tiles[x, y - 1] != null)
-                currentAvailableCharacters.Remove(tiles[x, y - 1].GetTileType());
+                _currentAvailableTileTypes.Remove(tiles[x, y - 1].GetTileType());
 
-            var randomAvailableType = currentAvailableCharacters[Random.Range(0, currentAvailableCharacters.Count)];
-            return characters
+            var randomAvailableType = Tile.TileType.Type1; 
+            if(_currentAvailableTileTypes.Count > 0)
+                randomAvailableType = _currentAvailableTileTypes[Random.Range(0, _currentAvailableTileTypes.Count)];
+            return availableSpriteTiles
                 .FirstOrDefault(spriteTile =>
                     spriteTile.type == randomAvailableType);
         }
 
+        private void ProcessEndActionCallback(TileController.TileAction action, TileController tileController)
+        {
+            switch (action)
+            {
+                case TileController.TileAction.Swap:
+                    ClearAllMatchesForTile(tileController);
+                    break;
+                case TileController.TileAction.Shift:
+                    break;
+                default: return;
+            }
+        }
+
         public void ProcessTileClick(TileController clickedTile)
         {
-            if (IsShifting) return;
+            if (IsShifting || IsRefilling) return;
 
             if (SelectedTile == clickedTile)
                 DeselectSelected();
@@ -229,15 +279,21 @@ namespace Managers
 
         private void SwapTiles(TileController originTile, TileController destinationTile)
         {
+            _allClearMatches = 2;
             int originX = originTile.GetPositionXInBoard();
             int originY = originTile.GetPositionYInBoard();
 
-            originTile.swapPosition = destinationTile.transform.position;
-            destinationTile.swapPosition = originTile.transform.position;
+            int destinationX = destinationTile.GetPositionXInBoard();
+            int destinationY = destinationTile.GetPositionYInBoard();
 
-            originTile.UpdatePositionInBoard(destinationTile.GetPositionXInBoard(),
-                destinationTile.GetPositionYInBoard());
+            originTile.UpdatePositionInBoard(destinationX, destinationY);
+            tiles[destinationX, destinationY] = originTile;
+
             destinationTile.UpdatePositionInBoard(originX, originY);
+            tiles[originX, originY] = destinationTile;
+
+            originTile.SetAction(TileController.TileAction.Swap, destinationTile.transform.position);
+            destinationTile.SetAction(TileController.TileAction.Swap, originTile.transform.position);
 
             AudioManager.instance.PlayAudio(Clip.Swap);
         }
@@ -250,20 +306,19 @@ namespace Managers
 
             if (horizontalMatches || verticalMatches)
             {
+                tiles[matchedTile.GetPositionXInBoard(), matchedTile.GetPositionYInBoard()] = null;
                 Destroy(matchedTile.gameObject);
+                AudioManager.instance.PlayAudio(Clip.Clear);
             }
-
-            //StopCoroutine(BoardManager.instance.FindNullTiles());
-            //StartCoroutine(BoardManager.instance.FindNullTiles());
-            AudioManager.instance.PlayAudio(Clip.Clear);
+            _clearedMatches++;
         }
 
         private bool ClearMatchForTile(TileController matchedTile, Vector2[] paths)
         {
-            List<GameObject> matches = matchedTile.FindAllMatches();
+            List<GameObject> matches = matchedTile.FindAllMatchesInPath(paths);
 
             if (matches.Count < Match.MatchMinLength) return false;
-            
+
             for (int i = 0; i < matches.Count; ++i)
             {
                 TileController tileMatch = matches[i].GetComponent<TileController>();
@@ -273,6 +328,45 @@ namespace Managers
             }
 
             return true;
+        }
+
+        private IEnumerator ClearAllMatchesForBoard()
+        {
+            List<BoardEntry> tilesWithMatches = new List<BoardEntry>();
+            //Check if new matches have been formed
+            for (int x = 0; x < xSize; x++)
+            {
+                for (int y = 0; y < ySize; y++)
+                {
+                    if (tiles[x, y].CanMatchAnyInPosition(tiles[x, y].transform.position))
+                        tilesWithMatches.Add(new BoardEntry(x, y));
+                }
+            }
+
+            _allClearMatches = tilesWithMatches.Count > 0 ? tilesWithMatches.Count : -1;
+            for (int i = 0; i < tilesWithMatches.Count; i++)
+            {
+                var boardEntry = tilesWithMatches[i];
+                if (tiles[boardEntry.x, boardEntry.y] == null)
+                {
+                    _allClearMatches--;
+                    continue;
+                }
+                yield return new WaitForSeconds(.05f);
+                ClearAllMatchesForTile(tiles[boardEntry.x, boardEntry.y]);
+            }
+        }
+
+        private struct BoardEntry
+        {
+            public int x;
+            public int y;
+
+            public BoardEntry(int x, int y)
+            {
+                this.x = x;
+                this.y = y;
+            }
         }
     }
 }

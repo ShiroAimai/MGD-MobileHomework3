@@ -27,11 +27,18 @@ namespace Controllers
             public static readonly Vector2[] All = new Vector2[] {Up, Down, Left, Right};
         }
     }
-
+    
     public class TileController : MonoBehaviour
     {
+        public enum TileAction
+        {
+            Swap,
+            Shift,
+            Idle
+        }
         [SerializeField] private Color selectedColor = new Color(.5f, .5f, .5f, 1.0f);
 
+        [SerializeField]
         private Tile model;
 
         private SpriteRenderer render;
@@ -39,8 +46,10 @@ namespace Controllers
 
         private bool matchFound = false;
 
-        public Vector3 swapPosition = Vector3.zero;
-        public event Action<TileController> onSwapped;
+        private Vector3 targetPosition = Vector3.zero;
+        private TileAction action = TileAction.Idle;
+        public event Action<TileAction, TileController> onTargetPositionReached;
+        
         #region Lifecycle
         void Awake()
         {
@@ -50,7 +59,7 @@ namespace Controllers
 
         private void FixedUpdate()
         {
-            TryToUpdateSwapPosition();
+            TryToPerformAction();
         }
         private void OnMouseDown()
         {
@@ -60,6 +69,11 @@ namespace Controllers
 
         #region Public
 
+        public void SetAction(TileAction action, Vector3 nextPosition)
+        {
+            this.action = action;
+            targetPosition = nextPosition;
+        }
         public void Init(int row, int column, Tile.TileType type)
         {
             model = new Tile {idRow = row, idColumn = column, type = type};
@@ -112,27 +126,29 @@ namespace Controllers
             return horizontalMatches || verticalMatches;
         }
 
-        public List<GameObject> FindAllMatches()
+        public List<GameObject> FindAllMatchesInPath(Vector2[] path)
         {
-            return AdjacentDirections.Bundle.All
+            return path
                 .SelectMany(dir => FindMatchInDirectionFromPosition(transform.position, dir).matches)
                 .ToList();
         }
         #endregion
 
         #region Private
-        private void TryToUpdateSwapPosition()
+        private void TryToPerformAction()
         {
-            if (swapPosition == Vector3.zero) return;
-            if (transform.position != swapPosition)
+            if (action == TileAction.Idle) return;
+            if (transform.position != targetPosition)
             {
                 transform.position =
-                    Vector3.MoveTowards(transform.position, swapPosition, 10f * Time.fixedDeltaTime);
+                    Vector3.MoveTowards(transform.position, targetPosition, 10f * Time.fixedDeltaTime);
             }
             else
             {
-                swapPosition = Vector3.zero;
-                onSwapped?.Invoke(this);
+                var lastAction = action;
+                action = TileAction.Idle;
+                targetPosition = Vector3.zero;
+                onTargetPositionReached?.Invoke(lastAction, this);
             }
         }
         
@@ -151,7 +167,7 @@ namespace Controllers
         {
             List<GameObject> matchingTiles = new List<GameObject>();
             RaycastHit2D hit = Physics2D.Raycast(position, castDir);
-            while (hit.collider != null && 
+            while (hit.collider != null &&
                    hit.collider.gameObject != gameObject && 
                    hit.collider.gameObject.GetComponent<TileController>().GetTileType() == GetTileType()
                    )
