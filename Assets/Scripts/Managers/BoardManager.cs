@@ -4,6 +4,7 @@ using System.Linq;
 using Controllers;
 using Models;
 using UnityEngine;
+using Utils;
 using Random = UnityEngine.Random;
 
 namespace Managers
@@ -91,7 +92,7 @@ namespace Managers
             TileSprite tileSprite = GetAvailableRandomTileSprite(x, y);
             newTile.GetComponent<SpriteRenderer>().sprite = tileSprite.sprite;
             tileController.Init(x, y, tileSprite.type);
-            tileController.onTargetPositionReached += ProcessEndActionCallback;
+            tileController.onActionCompleted += ProcessEndActionCallback;
         }
 
         private void ClearBoard()
@@ -102,7 +103,7 @@ namespace Managers
                 {
                     if (tiles[x, y] != null)
                     {
-                        tiles[x, y].onTargetPositionReached -= ProcessEndActionCallback;
+                        tiles[x, y].onActionCompleted -= ProcessEndActionCallback;
                         tiles[x, y] = null;
                     }
                 }
@@ -156,13 +157,12 @@ namespace Managers
                 }
                 else
                 {
-
                     Vector3 shiftedPosition = controller.transform.position;
                     shiftedPosition.y -= tilesOffset.y * nullCount;
                     tiles[x, y - nullCount] = controller;
                     tiles[x, y] = null;
                     controller.UpdatePositionInBoard(x, y - nullCount);
-                    controller.SetAction(TileController.TileAction.Shift, shiftedPosition);
+                    controller.SetMoveAction(TileController.TileAction.Shift, shiftedPosition);
                 }
             }
 
@@ -206,6 +206,9 @@ namespace Managers
                 case TileController.TileAction.Swap:
                     ClearAllMatchesForTile(tileController);
                     break;
+                case TileController.TileAction.Explode:
+                    _clearedMatches++;
+                    break;
                 case TileController.TileAction.Shift:
                     break;
                 default: return;
@@ -221,15 +224,9 @@ namespace Managers
             else
             {
                 //no tile previously selected, select this
-                if (TryToSelectTile(clickedTile))
-                    return;
+                if (TryToSelectTile(clickedTile)) return;
                 //previously selected tile different from this, try to swap with this
-                if (TryToSwapSelectedWith(clickedTile))
-                {
-                    //selectedTile.ClearAllMatches();
-                    //ClearAllMatches();
-                    return;
-                }
+                if (TryToSwapSelectedWith(clickedTile)) return;
 
                 //previously selected tile is far from this, deselect it and select this-
                 DeselectSelected();
@@ -259,7 +256,8 @@ namespace Managers
             if (!isOtherNearby) return false;
             if (SelectedTile.GetTileType() == otherTile.GetTileType())
             {
-                //can't swap animation
+                SelectedTile.Play(TileAnimation.BlockSwap);
+                otherTile.Play(TileAnimation.BlockSwap);
                 return false;
             }
 
@@ -273,7 +271,8 @@ namespace Managers
                 return true;
             }
 
-            //can't swap, no match found
+            SelectedTile.Play(TileAnimation.BlockSwap);
+            otherTile.Play(TileAnimation.BlockSwap);
             return false;
         }
 
@@ -292,8 +291,8 @@ namespace Managers
             destinationTile.UpdatePositionInBoard(originX, originY);
             tiles[originX, originY] = destinationTile;
 
-            originTile.SetAction(TileController.TileAction.Swap, destinationTile.transform.position);
-            destinationTile.SetAction(TileController.TileAction.Swap, originTile.transform.position);
+            originTile.SetMoveAction(TileController.TileAction.Swap, destinationTile.transform.position);
+            destinationTile.SetMoveAction(TileController.TileAction.Swap, originTile.transform.position);
 
             AudioManager.instance.PlayAudio(Clip.Swap);
         }
@@ -307,10 +306,11 @@ namespace Managers
             if (horizontalMatches || verticalMatches)
             {
                 tiles[matchedTile.GetPositionXInBoard(), matchedTile.GetPositionYInBoard()] = null;
-                Destroy(matchedTile.gameObject);
+                matchedTile.SetAction(TileController.TileAction.Explode);
+                matchedTile.Play(TileAnimation.Explode);
                 AudioManager.instance.PlayAudio(Clip.Clear);
             }
-            _clearedMatches++;
+            else _clearedMatches++;
         }
 
         private bool ClearMatchForTile(TileController matchedTile, Vector2[] paths)
@@ -323,8 +323,7 @@ namespace Managers
             {
                 TileController tileMatch = matches[i].GetComponent<TileController>();
                 tiles[tileMatch.GetPositionXInBoard(), tileMatch.GetPositionYInBoard()] = null;
-                Destroy(matches[i]);
-                //matchTile.animator.SetTrigger("Explode");
+                tileMatch.Play(TileAnimation.Explode);
             }
 
             return true;

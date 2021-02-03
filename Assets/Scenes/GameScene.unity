@@ -150,13 +150,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f19c99a3f7d3d5444aa53d5a0f8e2354, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  characters:
-  - {fileID: 21300000, guid: b6735aff7b533524b91c26572a387c02, type: 3}
-  - {fileID: 21300000, guid: 19e786310b7dc2040a6b0a4b60ea2626, type: 3}
-  - {fileID: 21300000, guid: 2da2f78b61ea6da4ab11645e60ef9788, type: 3}
-  - {fileID: 21300000, guid: a264c1b6842421b459988b37369bba6d, type: 3}
-  - {fileID: 21300000, guid: 2681e1f7d5cbc774aa3d170f4c0cf20a, type: 3}
-  - {fileID: 21300000, guid: de6184bd8dfc0fd4aafe809ab058def9, type: 3}
+  availableSpriteTiles:
+  - type: 0
+    sprite: {fileID: 21300000, guid: b6735aff7b533524b91c26572a387c02, type: 3}
+  - type: 1
+    sprite: {fileID: 21300000, guid: 19e786310b7dc2040a6b0a4b60ea2626, type: 3}
+  - type: 2
+    sprite: {fileID: 21300000, guid: a264c1b6842421b459988b37369bba6d, type: 3}
+  - type: 3
+    sprite: {fileID: 21300000, guid: de6184bd8dfc0fd4aafe809ab058def9, type: 3}
+  - type: 4
+    sprite: {fileID: 21300000, guid: 2681e1f7d5cbc774aa3d170f4c0cf20a, type: 3}
+  - type: 5
+    sprite: {fileID: 21300000, guid: 2da2f78b61ea6da4ab11645e60ef9788, type: 3}
   tile: {fileID: 1000010131827792, guid: 23ca29bfb585d2a409e3c42dfc9c2f0f, type: 3}
   xSize: 8
   ySize: 8

@@ -123,6 +123,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   selectedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  model:
+    type: 0
+    idRow: 0
+    idColumn: 0
 --- !u!95 &797729221161100185
 Animator:
   serializedVersion: 3

@@ -4,36 +4,23 @@ using System.Linq;
 using Managers;
 using Models;
 using UnityEngine;
+using Utils;
 
 namespace Controllers
 {
-    internal static class AdjacentDirections
+    public static class TileAnimation
     {
-        public readonly static Vector2 Up = Vector2.up;
-        public readonly static Vector2 Down = Vector2.down;
-        public readonly static Vector2 Left = Vector2.left;
-        public readonly static Vector2 Right = Vector2.right;
-
-        public static Vector2 GetOpposite(this Vector2 dir)
-        {
-            //opposite direction of a vector is obtained by
-            //-(1/magnitude)*vector
-            return (-(1 / dir.magnitude)) * dir;
-        }
-        internal static class Bundle
-        {
-            public static readonly Vector2[] Horizontal = new Vector2[] {Left, Right};
-            public static readonly Vector2[] Vertical = new Vector2[] {Up, Down};
-            public static readonly Vector2[] All = new Vector2[] {Up, Down, Left, Right};
-        }
+        public static string Explode => "Explode";
+        public static string BlockSwap => "BlockSwap";
+        
     }
-    
     public class TileController : MonoBehaviour
     {
         public enum TileAction
         {
             Swap,
             Shift,
+            Explode,
             Idle
         }
         [SerializeField] private Color selectedColor = new Color(.5f, .5f, .5f, 1.0f);
@@ -43,12 +30,10 @@ namespace Controllers
 
         private SpriteRenderer render;
         private Animator animator;
-
-        private bool matchFound = false;
-
-        private Vector3 targetPosition = Vector3.zero;
-        private TileAction action = TileAction.Idle;
-        public event Action<TileAction, TileController> onTargetPositionReached;
+        
+        private Vector3 _targetPosition = Vector3.zero;
+        private TileAction _action = TileAction.Idle;
+        public event Action<TileAction, TileController> onActionCompleted;
         
         #region Lifecycle
         void Awake()
@@ -68,12 +53,6 @@ namespace Controllers
         #endregion
 
         #region Public
-
-        public void SetAction(TileAction action, Vector3 nextPosition)
-        {
-            this.action = action;
-            targetPosition = nextPosition;
-        }
         public void Init(int row, int column, Tile.TileType type)
         {
             model = new Tile {idRow = row, idColumn = column, type = type};
@@ -98,6 +77,17 @@ namespace Controllers
         {
             model.idRow = x;
             model.idColumn = y;
+        }
+        
+        public void SetMoveAction(TileAction action, Vector3 nextPosition)
+        {
+            _action = action;
+            _targetPosition = nextPosition;
+        }
+
+        public void SetAction(TileAction action)
+        {
+            _action = action;
         }
         
         public void Select()
@@ -132,23 +122,35 @@ namespace Controllers
                 .SelectMany(dir => FindMatchInDirectionFromPosition(transform.position, dir).matches)
                 .ToList();
         }
+
+        public void Play(string animation)
+        {
+            animator.SetTrigger(animation);
+        }
+        
         #endregion
 
         #region Private
+
+        private void OnExplode() //used in animation Explode to destroy gameobject on animation end
+        {
+            onActionCompleted?.Invoke(_action, this);
+            Destroy(gameObject);
+        }
         private void TryToPerformAction()
         {
-            if (action == TileAction.Idle) return;
-            if (transform.position != targetPosition)
+            if (_action == TileAction.Idle || _targetPosition == Vector3.zero) return;
+            if (transform.position != _targetPosition)
             {
                 transform.position =
-                    Vector3.MoveTowards(transform.position, targetPosition, 10f * Time.fixedDeltaTime);
+                    Vector3.MoveTowards(transform.position, _targetPosition, 5f * Time.fixedDeltaTime);
             }
             else
             {
-                var lastAction = action;
-                action = TileAction.Idle;
-                targetPosition = Vector3.zero;
-                onTargetPositionReached?.Invoke(lastAction, this);
+                var lastAction = _action;
+                _action = TileAction.Idle;
+                _targetPosition = Vector3.zero;
+                onActionCompleted?.Invoke(lastAction, this);
             }
         }
         
