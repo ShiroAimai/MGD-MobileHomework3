@@ -4,11 +4,23 @@ using System.Linq;
 using Controllers;
 using Models;
 using UnityEngine;
-using Utils;
 using Random = UnityEngine.Random;
 
 namespace Managers
 {
+    public class BoardEntry
+    {
+        public int x;
+        public int y;
+
+        private BoardEntry() {}
+
+        public static BoardEntry Create(int _x, int _y)
+        {
+            return new BoardEntry() {x = _x, y = _y};
+        }
+    }
+    
     public class BoardManager : MonoBehaviour
     {
         public static BoardManager instance;
@@ -16,34 +28,39 @@ namespace Managers
         /**
          * Elements
          */
-        [Header("Tile config")] [SerializeField]
-        private List<TileSprite> availableSpriteTiles = new List<TileSprite>();
+        [Header("Tile config")] 
+        [SerializeField] private List<TileSprite> availableSpriteTiles = new List<TileSprite>();
 
         private readonly List<Tile.TileType> _currentAvailableTileTypes = new List<Tile.TileType>();
-
-
+        
         [Header("Board config")] [SerializeField]
-        private GameObject tile;
-
+        private GameObject tilePrefab;
         [SerializeField] private int xSize, ySize;
         private Vector2 tilesOffset;
+        
+        [Header("Power ups config")]
+        [SerializeField][Range(1, 100)] private int powerUpProbability;
+        [SerializeField] private List<PowerUpSprite> availablePowerUpTiles = new List<PowerUpSprite>();
 
         private TileController[,] tiles;
-
+        
         public TileController SelectedTile { get; private set; }
 
         public bool IsShifting { get; private set; }
         public bool IsRefilling { get; private set; }
+        
+        public bool IsBoardBusy { get; private set; }
 
         private int _clearedMatches = 0;
         private int _allClearMatches = -1;
         private bool HasClearedMatches => _clearedMatches == _allClearMatches;
 
+        #region Lifecycle
         void Start()
         {
             instance = GetComponent<BoardManager>();
 
-            tilesOffset = tile.GetComponent<SpriteRenderer>().bounds.size;
+            tilesOffset = tilePrefab.GetComponent<SpriteRenderer>().bounds.size;
             CreateBoard();
         }
 
@@ -59,7 +76,9 @@ namespace Managers
             StopCoroutine(FindNullTiles());
             StartCoroutine(FindNullTiles());
         }
+        #endregion
 
+        #region Board Handler
         /**
 	    * Creates a Board starting from bottom left
 	    * And goes ahead completing row per row
@@ -70,8 +89,12 @@ namespace Managers
             tiles = new TileController[xSize, ySize];
 
             for (int x = 0; x < xSize; x++)
-            for (int y = 0; y < ySize; y++)
-                CreateTile(x, y);
+            {
+                for (int y = 0; y < ySize; y++)
+                {
+                    CreateTile(x, y);
+                }
+            }
         }
 
         private void CreateTile(int x, int y)
@@ -82,17 +105,13 @@ namespace Managers
             float xOffset = tilesOffset.x;
             float yOffset = tilesOffset.y;
 
-            _currentAvailableTileTypes.Clear();
-            GameObject newTile = Instantiate(tile,
+            GameObject newTile = Instantiate(tilePrefab,
                 new Vector3(startX + (xOffset * x), startY + (yOffset * y), 0),
-                tile.transform.rotation);
+                tilePrefab.transform.rotation);
             var tileController = newTile.GetComponent<TileController>();
             tiles[x, y] = tileController;
             newTile.transform.parent = transform;
-            TileSprite tileSprite = GetAvailableRandomTileSprite(x, y);
-            newTile.GetComponent<SpriteRenderer>().sprite = tileSprite.sprite;
-            tileController.Init(x, y, tileSprite.type);
-            tileController.onActionCompleted += ProcessEndActionCallback;
+            ConfigureTile(tileController, x, y);
         }
 
         private void ClearBoard()
@@ -112,6 +131,7 @@ namespace Managers
 
         private IEnumerator FindNullTiles()
         {
+            IsBoardBusy = true;
             for (int x = 0; x < xSize; x++)
             {
                 for (int y = 0; y < ySize; y++)
@@ -135,8 +155,12 @@ namespace Managers
                     }
                 }
             }
+            
+            yield return new WaitForSeconds(.5f);
 
             yield return StartCoroutine(ClearAllMatchesForBoard());
+
+            IsBoardBusy = false;
         }
 
         private IEnumerator ShiftDown(int x, int yStart, float shiftDelay = .03f)
@@ -179,6 +203,30 @@ namespace Managers
             IsRefilling = false;
         }
 
+        private bool CanSpawnPowerUp()
+        {
+            return Random.Range(1, 100) <= powerUpProbability;
+        }
+
+        private void ConfigureTile(TileController newlyCreatedTile, int x, int y)
+        {
+            PowerUpSprite powerUp = GetAvailableRandomPowerUpSprite();
+            TileSprite tileSprite = GetAvailableRandomTileSprite(x, y);
+            
+            Tile.TileType type = powerUp?.type ?? tileSprite.type;
+            Sprite sprite = powerUp?.sprite ?? tileSprite.sprite;
+            PowerUp.Type powerUpType = powerUp?.powerUpType ?? PowerUp.Type.None;
+            
+            newlyCreatedTile.gameObject.GetComponent<SpriteRenderer>().sprite = sprite;
+            newlyCreatedTile.Init(x, y, type, powerUpType);
+            newlyCreatedTile.onActionCompleted += ProcessEndActionCallback;
+        }
+        
+        private PowerUpSprite GetAvailableRandomPowerUpSprite()
+        {
+            if (!CanSpawnPowerUp() || availablePowerUpTiles.Count == 0) return null;
+            return availablePowerUpTiles[Random.Range(0, availablePowerUpTiles.Count)];
+        }
         private TileSprite GetAvailableRandomTileSprite(int x, int y)
         {
             _currentAvailableTileTypes.Clear();
@@ -199,56 +247,6 @@ namespace Managers
                     spriteTile.type == randomAvailableType);
         }
 
-        private void ProcessEndActionCallback(TileController.TileAction action, TileController tileController)
-        {
-            switch (action)
-            {
-                case TileController.TileAction.Swap:
-                    ClearAllMatchesForTile(tileController);
-                    break;
-                case TileController.TileAction.Explode:
-                    _clearedMatches++;
-                    break;
-                case TileController.TileAction.Shift:
-                    break;
-                default: return;
-            }
-        }
-
-        public void ProcessTileClick(TileController clickedTile)
-        {
-            if (IsShifting || IsRefilling) return;
-
-            if (SelectedTile == clickedTile)
-                DeselectSelected();
-            else
-            {
-                //no tile previously selected, select this
-                if (TryToSelectTile(clickedTile)) return;
-                //previously selected tile different from this, try to swap with this
-                if (TryToSwapSelectedWith(clickedTile)) return;
-
-                //previously selected tile is far from this, deselect it and select this-
-                DeselectSelected();
-            }
-        }
-
-        private bool TryToSelectTile(TileController selectionCandidate)
-        {
-            if (SelectedTile) return false;
-            SelectedTile = selectionCandidate;
-            AudioManager.instance.PlayAudio(Clip.Select);
-            SelectedTile.Select();
-            return true;
-        }
-
-        private void DeselectSelected()
-        {
-            if (!SelectedTile) return;
-            SelectedTile.Deselect();
-            SelectedTile = null;
-        }
-
         private bool TryToSwapSelectedWith(TileController otherTile)
         {
             if (!SelectedTile) return false;
@@ -261,8 +259,8 @@ namespace Managers
                 return false;
             }
 
-            if (SelectedTile.CanMatchAnyInPosition(otherTile.transform.position) ||
-                otherTile.CanMatchAnyInPosition(SelectedTile.transform.position))
+            if (MatchResolver.CanMatchAnyInPosition(SelectedTile, otherTile.transform.position) ||
+                MatchResolver.CanMatchAnyInPosition(otherTile, SelectedTile.transform.position))
             {
                 //can swap
                 SwapTiles(SelectedTile, otherTile);
@@ -297,38 +295,6 @@ namespace Managers
             AudioManager.instance.PlayAudio(Clip.Swap);
         }
 
-
-        private void ClearAllMatchesForTile(TileController matchedTile)
-        {
-            bool horizontalMatches = ClearMatchForTile(matchedTile, AdjacentDirections.Bundle.Horizontal);
-            bool verticalMatches = ClearMatchForTile(matchedTile, AdjacentDirections.Bundle.Vertical);
-
-            if (horizontalMatches || verticalMatches)
-            {
-                tiles[matchedTile.GetPositionXInBoard(), matchedTile.GetPositionYInBoard()] = null;
-                matchedTile.SetAction(TileController.TileAction.Explode);
-                matchedTile.Play(TileAnimation.Explode);
-                AudioManager.instance.PlayAudio(Clip.Clear);
-            }
-            else _clearedMatches++;
-        }
-
-        private bool ClearMatchForTile(TileController matchedTile, Vector2[] paths)
-        {
-            List<GameObject> matches = matchedTile.FindAllMatchesInPath(paths);
-
-            if (matches.Count < Match.MatchMinLength) return false;
-
-            for (int i = 0; i < matches.Count; ++i)
-            {
-                TileController tileMatch = matches[i].GetComponent<TileController>();
-                tiles[tileMatch.GetPositionXInBoard(), tileMatch.GetPositionYInBoard()] = null;
-                tileMatch.Play(TileAnimation.Explode);
-            }
-
-            return true;
-        }
-
         private IEnumerator ClearAllMatchesForBoard()
         {
             List<BoardEntry> tilesWithMatches = new List<BoardEntry>();
@@ -337,8 +303,8 @@ namespace Managers
             {
                 for (int y = 0; y < ySize; y++)
                 {
-                    if (tiles[x, y].CanMatchAnyInPosition(tiles[x, y].transform.position))
-                        tilesWithMatches.Add(new BoardEntry(x, y));
+                    if (MatchResolver.CanMatchAnyInPosition(tiles[x, y]))
+                        tilesWithMatches.Add(BoardEntry.Create(x, y));
                 }
             }
 
@@ -351,21 +317,134 @@ namespace Managers
                     _allClearMatches--;
                     continue;
                 }
-                yield return new WaitForSeconds(.05f);
+                yield return new WaitForSeconds(2f);
                 ClearAllMatchesForTile(tiles[boardEntry.x, boardEntry.y]);
             }
         }
+        #endregion
 
-        private struct BoardEntry
+        #region Tile Action Handler
+        private void ProcessEndActionCallback(TileController.TileAction action, TileController tileController)
         {
-            public int x;
-            public int y;
-
-            public BoardEntry(int x, int y)
+            switch (action)
             {
-                this.x = x;
-                this.y = y;
+                case TileController.TileAction.Click:
+                    ProcessTileClick(tileController);
+                    break;
+                case TileController.TileAction.Swap:
+                    ClearAllMatchesForTile(tileController);
+                    break;
+                case TileController.TileAction.Explode:
+                    _clearedMatches++;
+                    break;
+                case TileController.TileAction.Shift:
+                    break;
+                default: return;
             }
         }
+
+        private void ProcessTileClick(TileController clickedTile)
+        {
+            //if (IsShifting || IsRefilling) return;
+            if (IsBoardBusy) return;
+            if (SelectedTile == clickedTile)
+                DeselectSelected();
+            else
+            {
+                //no tile previously selected, select this
+                if (TryToSelectTile(clickedTile)) return;
+                //previously selected tile different from this, try to swap with this
+                if (TryToSwapSelectedWith(clickedTile)) return;
+
+                //previously selected tile is far from this, deselect it and select this-
+                DeselectSelected();
+            }
+        }
+
+        private bool TryToSelectTile(TileController selectionCandidate)
+        {
+            if (SelectedTile) return false;
+            SelectedTile = selectionCandidate;
+            AudioManager.instance.PlayAudio(Clip.Select);
+            SelectedTile.Select();
+            return true;
+        }
+
+        private void DeselectSelected()
+        {
+            if (!SelectedTile) return;
+            SelectedTile.Deselect();
+            SelectedTile = null;
+        }
+
+        private void ClearAllMatchesForTile(TileController matchedTile)
+        {
+            List<TileController> matches;
+            bool isMatchValid = MatchResolver.ResolveMatch(matchedTile, out matches);
+
+            if (isMatchValid)
+            {
+                //handle power up if any in matches
+                if (matchedTile.IsPowerUpTile() || matches.Any(tile => tile.IsPowerUpTile()))
+                {
+                    List<TileController> powerUps = matches.Where(tile => tile.IsPowerUpTile()).ToList();
+                    //also check matchedTile
+                    if(matchedTile.IsPowerUpTile())
+                        powerUps.Add(matchedTile);
+                    foreach (var powerUp in powerUps)
+                    {
+                        switch (powerUp.GetPowerUpTile())
+                        {
+                            case PowerUp.Type.Bomb:
+                                HandleBombPowerUp(powerUp, matches);
+                                break;
+                            case PowerUp.Type.Freeze:
+                                HandleFreezePowerUp();
+                                break;
+                        }
+                    }
+                }
+
+                for (int i = 0; i < matches.Count; ++i)
+                {
+                    if(matches[i] == null) continue;
+                    tiles[matches[i].GetPositionXInBoard(), matches[i].GetPositionYInBoard()] = null;
+                    matches[i].Play(TileAnimation.Explode);
+                }
+                
+                tiles[matchedTile.GetPositionXInBoard(), matchedTile.GetPositionYInBoard()] = null;
+                matchedTile.SetAction(TileController.TileAction.Explode);
+                matchedTile.Play(TileAnimation.Explode);
+                AudioManager.instance.PlayAudio(Clip.Clear);
+            }
+            else _clearedMatches++;
+        }
+        #endregion
+
+        #region SuperPower Handler
+
+        private void HandleBombPowerUp(TileController powerUpTile, List<TileController> currentMatches)
+        {
+            int startX = powerUpTile.GetPositionXInBoard() - 1;
+            int startY = powerUpTile.GetPositionYInBoard() - 1;
+
+            for (int x = startX; x <= powerUpTile.GetPositionXInBoard() + 1; ++x)
+            {
+                for (int y = startY; y <= powerUpTile.GetPositionYInBoard() + 1; ++y)
+                {
+                    if(x < 0 || y < 0 || x >= xSize || y >= ySize) continue;
+                    if(currentMatches.Contains(tiles[x, y])) continue;
+                    currentMatches.Add(tiles[x,y]);
+                }
+            }
+        }
+
+        private void HandleFreezePowerUp()
+        {
+            
+        }
+
+        #endregion
+      
     }
 }

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Managers;
 using Models;
 using UnityEngine;
 using Utils;
@@ -21,6 +20,7 @@ namespace Controllers
             Swap,
             Shift,
             Explode,
+            Click,
             Idle
         }
         [SerializeField] private Color selectedColor = new Color(.5f, .5f, .5f, 1.0f);
@@ -32,7 +32,7 @@ namespace Controllers
         private Animator animator;
         
         private Vector3 _targetPosition = Vector3.zero;
-        private TileAction _action = TileAction.Idle;
+        private TileAction _requestedAction = TileAction.Idle;
         public event Action<TileAction, TileController> onActionCompleted;
         
         #region Lifecycle
@@ -41,26 +41,33 @@ namespace Controllers
             render = GetComponent<SpriteRenderer>();
             animator = GetComponent<Animator>();
         }
-
+        
         private void FixedUpdate()
         {
             TryToPerformAction();
         }
+
         private void OnMouseDown()
         {
-            BoardManager.instance.ProcessTileClick(this);
+           onActionCompleted?.Invoke(TileAction.Click, this);
         }
+
         #endregion
 
         #region Public
-        public void Init(int row, int column, Tile.TileType type)
+        public void Init(int row, int column, Tile.TileType type, PowerUp.Type powerUpType = PowerUp.Type.None)
         {
-            model = new Tile {idRow = row, idColumn = column, type = type};
+            model = Tile.Create(type, row, column, powerUpType);
         }
 
         public Tile.TileType GetTileType()
         {
             return model.type;
+        }
+        
+        public PowerUp.Type GetPowerUpTile()
+        {
+            return model.powerUpType;
         }
 
         public int GetPositionXInBoard()
@@ -72,6 +79,11 @@ namespace Controllers
         {
             return model.idColumn;
         }
+        
+        public bool IsPowerUpTile()
+        {
+            return model.IsPowerUpTile;
+        }
 
         public void UpdatePositionInBoard(int x, int y)
         {
@@ -81,13 +93,13 @@ namespace Controllers
         
         public void SetMoveAction(TileAction action, Vector3 nextPosition)
         {
-            _action = action;
+            _requestedAction = action;
             _targetPosition = nextPosition;
         }
 
         public void SetAction(TileAction action)
         {
-            _action = action;
+            _requestedAction = action;
         }
         
         public void Select()
@@ -104,22 +116,12 @@ namespace Controllers
         {
             return GetAllAdjacentTiles().Contains(otherTile.gameObject);
         }
-
-        public bool CanMatchAnyInPosition(Vector3 position)
+        
+        public List<MatchCandidate> FindAllMatchesInPathFromPosition(Vector2[] path, Vector3? position = null)
         {
-            bool horizontalMatches = AdjacentDirections.Bundle.Horizontal
-                .Select(dir => FindMatchInDirectionFromPosition(position, dir).matches.Count)
-                .Sum() >= Match.MatchMinLength;
-            bool verticalMatches = AdjacentDirections.Bundle.Vertical
-                .Select(dir => FindMatchInDirectionFromPosition(position, dir).matches.Count)
-                .Sum() >= Match.MatchMinLength;
-            return horizontalMatches || verticalMatches;
-        }
-
-        public List<GameObject> FindAllMatchesInPath(Vector2[] path)
-        {
+            var startPosition = position ?? transform.position;
             return path
-                .SelectMany(dir => FindMatchInDirectionFromPosition(transform.position, dir).matches)
+                .Select(dir => FindMatchInDirectionFromPosition(startPosition, dir))
                 .ToList();
         }
 
@@ -134,12 +136,12 @@ namespace Controllers
 
         private void OnExplode() //used in animation Explode to destroy gameobject on animation end
         {
-            onActionCompleted?.Invoke(_action, this);
+            onActionCompleted?.Invoke(_requestedAction, this);
             Destroy(gameObject);
         }
         private void TryToPerformAction()
         {
-            if (_action == TileAction.Idle || _targetPosition == Vector3.zero) return;
+            if (_requestedAction == TileAction.Idle || _targetPosition == Vector3.zero) return;
             if (transform.position != _targetPosition)
             {
                 transform.position =
@@ -147,8 +149,8 @@ namespace Controllers
             }
             else
             {
-                var lastAction = _action;
-                _action = TileAction.Idle;
+                var lastAction = _requestedAction;
+                _requestedAction = TileAction.Idle;
                 _targetPosition = Vector3.zero;
                 onActionCompleted?.Invoke(lastAction, this);
             }
@@ -165,20 +167,29 @@ namespace Controllers
             return hit.collider != null ? hit.collider.gameObject : null;
         }
 
-        private Match FindMatchInDirectionFromPosition(Vector3 position, Vector2 castDir)
+        private MatchCandidate FindMatchInDirectionFromPosition(Vector3 position, Vector2 castDir)
         {
-            List<GameObject> matchingTiles = new List<GameObject>();
+            Tile.TileType tileType = GetTileType();
+            
+            MatchCandidate matchCandidate = MatchCandidate.Create(castDir);
+            
             RaycastHit2D hit = Physics2D.Raycast(position, castDir);
             while (hit.collider != null &&
                    hit.collider.gameObject != gameObject && 
-                   hit.collider.gameObject.GetComponent<TileController>().GetTileType() == GetTileType()
+                   (tileType == Tile.TileType.PowerUp ||
+                    hit.collider.gameObject.GetComponent<TileController>().GetTileType() == tileType ||
+                    hit.collider.gameObject.GetComponent<TileController>().IsPowerUpTile())
                    )
             {
-                matchingTiles.Add(hit.collider.gameObject);
+                //take the first item found as default type if power up
+                if (tileType == Tile.TileType.PowerUp)
+                    tileType = hit.collider.gameObject.GetComponent<TileController>().GetTileType();
+                
+                matchCandidate.candidates.Add(hit.collider.gameObject);
                 hit = Physics2D.Raycast(hit.collider.transform.position, castDir);
             }
-
-            return new Match() {dir = castDir, matches = matchingTiles};
+            
+            return matchCandidate;
         }
         #endregion
     }
