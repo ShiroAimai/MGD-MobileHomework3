@@ -45,15 +45,13 @@ namespace Managers
         private TileController[,] tiles;
         
         public TileController SelectedTile { get; private set; }
-
-        public bool IsShifting { get; private set; }
-        public bool IsRefilling { get; private set; }
         
         public bool IsBoardBusy { get; private set; }
 
         private int _clearedMatches = 0;
         private int _allClearMatches = -1;
         private bool HasClearedMatches => _clearedMatches == _allClearMatches;
+        private bool AnyMatchToClear => _allClearMatches > 0;
 
         #region Lifecycle
         void Start()
@@ -75,6 +73,25 @@ namespace Managers
             _clearedMatches = 0;
             StopCoroutine(FindNullTiles());
             StartCoroutine(FindNullTiles());
+            ScheduleBoardCheck();
+        }
+
+        private void ScheduleBoardCheck()
+        {
+            Invoke(nameof(DoBoardCheck), 2f);
+        }
+
+        private void DoBoardCheck()
+        {
+            if (AnyMatchToClear)
+            {
+                CancelInvoke(nameof(DoBoardCheck));
+                ScheduleBoardCheck();
+                return;
+            }
+
+            StopCoroutine(CheckIfAnyMovesIsPossibleOnBoard());
+            StartCoroutine(CheckIfAnyMovesIsPossibleOnBoard());
         }
         #endregion
 
@@ -159,13 +176,12 @@ namespace Managers
             yield return new WaitForSeconds(.5f);
 
             yield return StartCoroutine(ClearAllMatchesForBoard());
-
+            
             IsBoardBusy = false;
         }
 
         private IEnumerator ShiftDown(int x, int yStart, float shiftDelay = .03f)
         {
-            IsShifting = true;
             int nullCount = 0;
 
             //GUIManager.instance.Score += 50;
@@ -190,17 +206,14 @@ namespace Managers
                 }
             }
 
-            IsShifting = false;
         }
         
         private IEnumerator Refill(int xStart, int yStart, float refillDelay = 0.2f)
         {
-            IsRefilling = true;
             yield return new WaitForSeconds(refillDelay);
             for (int y = yStart; y < ySize; y++)
                 CreateTile(xStart, y);
 
-            IsRefilling = false;
         }
 
         private bool CanSpawnPowerUp()
@@ -317,9 +330,35 @@ namespace Managers
                     _allClearMatches--;
                     continue;
                 }
-                yield return new WaitForSeconds(2f);
+                yield return new WaitForSeconds(.2f);
                 ClearAllMatchesForTile(tiles[boardEntry.x, boardEntry.y]);
             }
+        }
+
+        private IEnumerator CheckIfAnyMovesIsPossibleOnBoard()
+        {
+            yield return new WaitForSeconds(.5f);
+            bool anyAvailableMatch = false;
+            for (int x = 0; x < xSize && !anyAvailableMatch; x++)
+            {
+                for (int y = 0; y < ySize && !anyAvailableMatch; y++)
+                {
+                    if(tiles[x,y] == null) continue;
+                    if (x - 1 > 0 && tiles[x - 1, y] != null)
+                        anyAvailableMatch = MatchResolver.CanMatchAnyInPosition(tiles[x, y], tiles[x - 1, y].transform.position);
+                    
+                    if (x + 1 < xSize && tiles[x + 1, y] != null)
+                        anyAvailableMatch = anyAvailableMatch || MatchResolver.CanMatchAnyInPosition(tiles[x, y], tiles[x + 1, y].transform.position);
+                    
+                    if (y - 1 > 0 && tiles[x, y - 1] != null)
+                        anyAvailableMatch = anyAvailableMatch || MatchResolver.CanMatchAnyInPosition(tiles[x, y], tiles[x, y - 1].transform.position);
+                    
+                    if (y + 1 < ySize && tiles[x, y + 1] != null)
+                        anyAvailableMatch = anyAvailableMatch || MatchResolver.CanMatchAnyInPosition(tiles[x, y], tiles[x, y + 1].transform.position);
+                }
+            }
+            
+            Debug.Log($"AVAILABLE MOVES {anyAvailableMatch}");
         }
         #endregion
 
@@ -345,7 +384,6 @@ namespace Managers
 
         private void ProcessTileClick(TileController clickedTile)
         {
-            //if (IsShifting || IsRefilling) return;
             if (IsBoardBusy) return;
             if (SelectedTile == clickedTile)
                 DeselectSelected();
@@ -391,12 +429,12 @@ namespace Managers
                     //also check matchedTile
                     if(matchedTile.IsPowerUpTile())
                         powerUps.Add(matchedTile);
-                    foreach (var powerUp in powerUps)
+                    for (int i = 0; i < powerUps.Count; ++i)
                     {
-                        switch (powerUp.GetPowerUpTile())
+                        switch (powerUps[i].GetPowerUpTile())
                         {
                             case PowerUp.Type.Bomb:
-                                HandleBombPowerUp(powerUp, matches);
+                                HandleBombPowerUp(powerUps[i], matches, powerUps);
                                 break;
                             case PowerUp.Type.Freeze:
                                 HandleFreezePowerUp();
@@ -423,18 +461,23 @@ namespace Managers
 
         #region SuperPower Handler
 
-        private void HandleBombPowerUp(TileController powerUpTile, List<TileController> currentMatches)
+        private void HandleBombPowerUp(TileController currentPowerUpTile, List<TileController> currentMatches, List<TileController> powerUpLists)
         {
-            int startX = powerUpTile.GetPositionXInBoard() - 1;
-            int startY = powerUpTile.GetPositionYInBoard() - 1;
+            int startX = currentPowerUpTile.GetPositionXInBoard() - 1;
+            int startY = currentPowerUpTile.GetPositionYInBoard() - 1;
 
-            for (int x = startX; x <= powerUpTile.GetPositionXInBoard() + 1; ++x)
+            for (int x = startX; x <= currentPowerUpTile.GetPositionXInBoard() + 1; ++x)
             {
-                for (int y = startY; y <= powerUpTile.GetPositionYInBoard() + 1; ++y)
+                for (int y = startY; y <= currentPowerUpTile.GetPositionYInBoard() + 1; ++y)
                 {
                     if(x < 0 || y < 0 || x >= xSize || y >= ySize) continue;
-                    if(currentMatches.Contains(tiles[x, y])) continue;
-                    currentMatches.Add(tiles[x,y]);
+                    var newCandidateToMatch = tiles[x, y];
+                    if(newCandidateToMatch == null) continue;
+                    if(currentMatches.Contains(newCandidateToMatch)) continue;
+                    
+                    currentMatches.Add(newCandidateToMatch);
+                    if(newCandidateToMatch.IsPowerUpTile())
+                        powerUpLists.Add(newCandidateToMatch);
                 }
             }
         }

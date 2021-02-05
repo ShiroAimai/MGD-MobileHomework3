@@ -64,7 +64,7 @@ namespace Managers
 		}
 	
 		private IEnumerator WaitForShiftingDone() {
-			yield return new WaitUntil(() => !BoardManager.instance.IsShifting);
+			yield return new WaitUntil(() => !BoardManager.instance.IsBoardBusy);
 			yield return new WaitForSeconds(.25f);
 			GameOver();
 		}
