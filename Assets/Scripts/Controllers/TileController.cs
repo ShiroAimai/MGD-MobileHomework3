@@ -9,10 +9,13 @@ namespace Controllers
 {
     public static class TileAnimation
     {
+        
         public static string Explode => "Explode";
         public static string BlockSwap => "BlockSwap";
         
     }
+    
+    [RequireComponent(typeof(Animator))]
     public class TileController : MonoBehaviour
     {
         public enum TileAction
@@ -23,13 +26,13 @@ namespace Controllers
             Click,
             Idle
         }
-        [SerializeField] private Color selectedColor = new Color(.5f, .5f, .5f, 1.0f);
 
         [SerializeField]
         private Tile model;
-
-        private SpriteRenderer render;
+        
         private Animator animator;
+        private string SelectionAnim => "isSelected";
+
         
         private Vector3 _targetPosition = Vector3.zero;
         private TileAction _requestedAction = TileAction.Idle;
@@ -38,13 +41,12 @@ namespace Controllers
         #region Lifecycle
         void Awake()
         {
-            render = GetComponent<SpriteRenderer>();
             animator = GetComponent<Animator>();
         }
         
         private void FixedUpdate()
         {
-            TryToPerformAction();
+            TryToPerformMoveAction();
         }
 
         private void OnMouseDown()
@@ -70,14 +72,9 @@ namespace Controllers
             return model.powerUpType;
         }
 
-        public int GetPositionXInBoard()
+        public BoardPoint GetBoardPoint()
         {
-            return model.idRow;
-        }
-
-        public int GetPositionYInBoard()
-        {
-            return model.idColumn;
+            return model.point;
         }
         
         public bool IsPowerUpTile()
@@ -87,8 +84,7 @@ namespace Controllers
 
         public void UpdatePositionInBoard(int x, int y)
         {
-            model.idRow = x;
-            model.idColumn = y;
+            model.point = BoardPoint.Create(x, y);
         }
         
         public void SetMoveAction(TileAction action, Vector3 nextPosition)
@@ -104,12 +100,12 @@ namespace Controllers
         
         public void Select()
         {
-            render.color = selectedColor;
+            animator.SetBool(SelectionAnim, true);
         }
 
         public void Deselect()
         {
-            render.color = Color.white;
+            animator.SetBool(SelectionAnim, false);
         }
         
         public bool IsTileAdjacentTo(TileController otherTile)
@@ -139,7 +135,7 @@ namespace Controllers
             onActionCompleted?.Invoke(_requestedAction, this);
             Destroy(gameObject);
         }
-        private void TryToPerformAction()
+        private void TryToPerformMoveAction()
         {
             if (_requestedAction == TileAction.Idle || _targetPosition == Vector3.zero) return;
             if (transform.position != _targetPosition)
