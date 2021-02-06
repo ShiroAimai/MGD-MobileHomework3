@@ -1,4 +1,5 @@
 ﻿using System;
+using Controllers;
 
 namespace Models
 {
@@ -20,14 +21,14 @@ namespace Models
         
         public TileType type;
         public PowerUp.Type powerUpType = PowerUp.Type.None;
-        public int idRow, idColumn;
+        public BoardPoint point;
 
         public bool IsPowerUpTile => type == TileType.PowerUp && 
                                      powerUpType != PowerUp.Type.None;
         
         public static Tile Create(TileType _type, int _idRow, int _idColumn, PowerUp.Type _superPowerType = PowerUp.Type.None)
         {
-            var tile = new Tile() {type = _type, idRow = _idRow, idColumn = _idColumn};
+            var tile = new Tile() {type = _type, point = BoardPoint.Create(_idRow, _idColumn)};
             if (_type == TileType.PowerUp && _superPowerType != PowerUp.Type.None)
             {
                 tile.powerUpType = _superPowerType;

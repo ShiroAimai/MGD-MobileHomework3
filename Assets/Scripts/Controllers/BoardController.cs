@@ -8,16 +8,16 @@ using Random = UnityEngine.Random;
 
 namespace Controllers
 {
-    public class BoardEntry
+    public class BoardPoint
     {
         public int x;
         public int y;
 
-        private BoardEntry() {}
+        private BoardPoint() {}
 
-        public static BoardEntry Create(int _x, int _y)
+        public static BoardPoint Create(int _x, int _y)
         {
-            return new BoardEntry() {x = _x, y = _y};
+            return new BoardPoint() {x = _x, y = _y};
         }
     }
     
@@ -170,8 +170,6 @@ namespace Controllers
                     }
                 }
             }
-            
-            yield return new WaitForSeconds(.5f);
 
             yield return StartCoroutine(ClearAllMatchesForBoard());
             
@@ -288,17 +286,15 @@ namespace Controllers
         private void SwapTiles(TileController originTile, TileController destinationTile)
         {
             _allClearMatches = 2;
-            int originX = originTile.GetPositionXInBoard();
-            int originY = originTile.GetPositionYInBoard();
+            BoardPoint originPoint = originTile.GetBoardPoint();
 
-            int destinationX = destinationTile.GetPositionXInBoard();
-            int destinationY = destinationTile.GetPositionYInBoard();
+            BoardPoint destinationPoint = destinationTile.GetBoardPoint();
 
-            originTile.UpdatePositionInBoard(destinationX, destinationY);
-            _tiles[destinationX, destinationY] = originTile;
+            originTile.UpdatePositionInBoard(destinationPoint.x, destinationPoint.y);
+            _tiles[destinationPoint.x, destinationPoint.y] = originTile;
 
-            destinationTile.UpdatePositionInBoard(originX, originY);
-            _tiles[originX, originY] = destinationTile;
+            destinationTile.UpdatePositionInBoard(originPoint.x, originPoint.y);
+            _tiles[originPoint.x, originPoint.y] = destinationTile;
 
             originTile.SetMoveAction(TileController.TileAction.Swap, destinationTile.transform.position);
             destinationTile.SetMoveAction(TileController.TileAction.Swap, originTile.transform.position);
@@ -308,14 +304,14 @@ namespace Controllers
 
         private IEnumerator ClearAllMatchesForBoard()
         {
-            List<BoardEntry> tilesWithMatches = new List<BoardEntry>();
+            List<BoardPoint> tilesWithMatches = new List<BoardPoint>();
             //Check if new matches have been formed
             for (int x = 0; x < xSize; x++)
             {
                 for (int y = 0; y < ySize; y++)
                 {
                     if (MatchResolver.CanMatchAnyInPosition(_tiles[x, y]))
-                        tilesWithMatches.Add(BoardEntry.Create(x, y));
+                        tilesWithMatches.Add(BoardPoint.Create(x, y));
                 }
             }
 
@@ -445,11 +441,13 @@ namespace Controllers
                 for (int i = 0; i < matches.Count; ++i)
                 {
                     if(matches[i] == null) continue;
-                    _tiles[matches[i].GetPositionXInBoard(), matches[i].GetPositionYInBoard()] = null;
+                    BoardPoint matchBoardPoint = matches[i].GetBoardPoint();
+                    _tiles[matchBoardPoint.x, matchBoardPoint.y] = null;
                     matches[i].Play(TileAnimation.Explode);
                 }
-                
-                _tiles[matchedTile.GetPositionXInBoard(), matchedTile.GetPositionYInBoard()] = null;
+                BoardPoint matchedTileBoardPoint = matchedTile.GetBoardPoint();
+
+                _tiles[matchedTileBoardPoint.x, matchedTileBoardPoint.y] = null;
                 matchedTile.SetAction(TileController.TileAction.Explode);
                 matchedTile.Play(TileAnimation.Explode);
                 AudioManager.instance.PlayAudio(Clip.Clear);
@@ -462,12 +460,13 @@ namespace Controllers
 
         private void HandleBombPowerUp(TileController currentPowerUpTile, List<TileController> currentMatches, List<TileController> powerUpLists)
         {
-            int startX = currentPowerUpTile.GetPositionXInBoard() - 1;
-            int startY = currentPowerUpTile.GetPositionYInBoard() - 1;
+            BoardPoint powerUpPointInBoard = currentPowerUpTile.GetBoardPoint();
+            int startX = powerUpPointInBoard.x - 1;
+            int startY = powerUpPointInBoard.y - 1;
 
-            for (int x = startX; x <= currentPowerUpTile.GetPositionXInBoard() + 1; ++x)
+            for (int x = startX; x <= powerUpPointInBoard.x + 1; ++x)
             {
-                for (int y = startY; y <= currentPowerUpTile.GetPositionYInBoard() + 1; ++y)
+                for (int y = startY; y <= powerUpPointInBoard.y + 1; ++y)
                 {
                     if(x < 0 || y < 0 || x >= xSize || y >= ySize) continue;
                     var newCandidateToMatch = _tiles[x, y];
