@@ -112,14 +112,6 @@ namespace Controllers
         {
             return GetAllAdjacentTiles().Contains(otherTile.gameObject);
         }
-        
-        public List<MatchCandidate> FindAllMatchesInPathFromPosition(Vector2[] path, Vector3? position = null)
-        {
-            var startPosition = position ?? transform.position;
-            return path
-                .Select(dir => FindMatchInDirectionFromPosition(startPosition, dir))
-                .ToList();
-        }
 
         public void Play(string animation)
         {
@@ -163,30 +155,7 @@ namespace Controllers
             return hit.collider != null ? hit.collider.gameObject : null;
         }
 
-        private MatchCandidate FindMatchInDirectionFromPosition(Vector3 position, Vector2 castDir)
-        {
-            Tile.TileType tileType = GetTileType();
-            
-            MatchCandidate matchCandidate = MatchCandidate.Create(castDir);
-            
-            RaycastHit2D hit = Physics2D.Raycast(position, castDir);
-            while (hit.collider != null &&
-                   hit.collider.gameObject != gameObject && 
-                   (tileType == Tile.TileType.PowerUp ||
-                    hit.collider.gameObject.GetComponent<TileController>().GetTileType() == tileType ||
-                    hit.collider.gameObject.GetComponent<TileController>().IsPowerUpTile())
-                   )
-            {
-                //take the first item found as default type if power up
-                if (tileType == Tile.TileType.PowerUp)
-                    tileType = hit.collider.gameObject.GetComponent<TileController>().GetTileType();
-                
-                matchCandidate.candidates.Add(hit.collider.gameObject);
-                hit = Physics2D.Raycast(hit.collider.transform.position, castDir);
-            }
-            
-            return matchCandidate;
-        }
+       
         #endregion
     }
 }
