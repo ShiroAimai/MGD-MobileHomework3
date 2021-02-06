@@ -5,7 +5,7 @@ namespace Models
     [Serializable]
     public class Tile
     {
-        protected Tile() {}
+        private Tile() {}
         
         public enum TileType
         {

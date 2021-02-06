@@ -1,12 +1,12 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Controllers;
+using Managers;
 using Models;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-namespace Managers
+namespace Controllers
 {
     public class BoardEntry
     {
@@ -21,14 +21,12 @@ namespace Managers
         }
     }
     
-    public class BoardManager : MonoBehaviour
+    public class BoardController : MonoBehaviour
     {
-        public static BoardManager instance;
-
         /**
          * Elements
          */
-        [Header("Tile config")] 
+        [Header("Tile config")]
         [SerializeField] private List<TileSprite> availableSpriteTiles = new List<TileSprite>();
 
         private readonly List<Tile.TileType> _currentAvailableTileTypes = new List<Tile.TileType>();
@@ -36,15 +34,15 @@ namespace Managers
         [Header("Board config")] [SerializeField]
         private GameObject tilePrefab;
         [SerializeField] private int xSize, ySize;
-        private Vector2 tilesOffset;
+        private Vector2 _tilesOffset;
         
         [Header("Power ups config")]
         [SerializeField][Range(1, 100)] private int powerUpProbability;
         [SerializeField] private List<PowerUpSprite> availablePowerUpTiles = new List<PowerUpSprite>();
 
-        private TileController[,] tiles;
-        
-        public TileController SelectedTile { get; private set; }
+        private TileController[,] _tiles;
+
+        private TileController SelectedTile { get; set; }
         
         public bool IsBoardBusy { get; private set; }
 
@@ -54,11 +52,10 @@ namespace Managers
         private bool AnyMatchToClear => _allClearMatches > 0;
 
         #region Lifecycle
+
         void Start()
         {
-            instance = GetComponent<BoardManager>();
-
-            tilesOffset = tilePrefab.GetComponent<SpriteRenderer>().bounds.size;
+            _tilesOffset = tilePrefab.GetComponent<SpriteRenderer>().bounds.size;
             CreateBoard();
         }
 
@@ -75,10 +72,13 @@ namespace Managers
             StartCoroutine(FindNullTiles());
             ScheduleBoardCheck();
         }
+        
+        #endregion
 
+        #region Board Handler
         private void ScheduleBoardCheck()
         {
-            Invoke(nameof(DoBoardCheck), 2f);
+            Invoke(nameof(DoBoardCheck), 1f);
         }
 
         private void DoBoardCheck()
@@ -93,9 +93,7 @@ namespace Managers
             StopCoroutine(CheckIfAnyMovesIsPossibleOnBoard());
             StartCoroutine(CheckIfAnyMovesIsPossibleOnBoard());
         }
-        #endregion
-
-        #region Board Handler
+        
         /**
 	    * Creates a Board starting from bottom left
 	    * And goes ahead completing row per row
@@ -103,7 +101,7 @@ namespace Managers
 	    */
         private void CreateBoard()
         {
-            tiles = new TileController[xSize, ySize];
+            _tiles = new TileController[xSize, ySize];
 
             for (int x = 0; x < xSize; x++)
             {
@@ -119,14 +117,14 @@ namespace Managers
             float startX = transform.position.x;
             float startY = transform.position.y;
 
-            float xOffset = tilesOffset.x;
-            float yOffset = tilesOffset.y;
+            float xOffset = _tilesOffset.x;
+            float yOffset = _tilesOffset.y;
 
             GameObject newTile = Instantiate(tilePrefab,
                 new Vector3(startX + (xOffset * x), startY + (yOffset * y), 0),
                 tilePrefab.transform.rotation);
             var tileController = newTile.GetComponent<TileController>();
-            tiles[x, y] = tileController;
+            _tiles[x, y] = tileController;
             newTile.transform.parent = transform;
             ConfigureTile(tileController, x, y);
         }
@@ -137,10 +135,10 @@ namespace Managers
             {
                 for (int y = 0; y < ySize; y++)
                 {
-                    if (tiles[x, y] != null)
+                    if (_tiles[x, y] != null)
                     {
-                        tiles[x, y].onActionCompleted -= ProcessEndActionCallback;
-                        tiles[x, y] = null;
+                        _tiles[x, y].onActionCompleted -= ProcessEndActionCallback;
+                        _tiles[x, y] = null;
                     }
                 }
             }
@@ -153,7 +151,7 @@ namespace Managers
             {
                 for (int y = 0; y < ySize; y++)
                 {
-                    if (tiles[x, y] == null)
+                    if (_tiles[x, y] == null)
                     {
                         yield return StartCoroutine(ShiftDown(x, y));
                         break;
@@ -165,7 +163,7 @@ namespace Managers
             {
                 for (int y = 0; y < ySize; y++)
                 {
-                    if (tiles[x, y] == null)
+                    if (_tiles[x, y] == null)
                     {
                         yield return StartCoroutine(Refill(x, y));
                         break;
@@ -190,7 +188,7 @@ namespace Managers
             //shift down above match items
             for (int y = yStart; y < ySize; ++y)
             {
-                TileController controller = tiles[x, y];
+                TileController controller = _tiles[x, y];
                 if (controller == null)
                 {
                     nullCount++;
@@ -198,9 +196,9 @@ namespace Managers
                 else
                 {
                     Vector3 shiftedPosition = controller.transform.position;
-                    shiftedPosition.y -= tilesOffset.y * nullCount;
-                    tiles[x, y - nullCount] = controller;
-                    tiles[x, y] = null;
+                    shiftedPosition.y -= _tilesOffset.y * nullCount;
+                    _tiles[x, y - nullCount] = controller;
+                    _tiles[x, y] = null;
                     controller.UpdatePositionInBoard(x, y - nullCount);
                     controller.SetMoveAction(TileController.TileAction.Shift, shiftedPosition);
                 }
@@ -245,12 +243,12 @@ namespace Managers
             _currentAvailableTileTypes.Clear();
             _currentAvailableTileTypes.AddRange(availableSpriteTiles.Select(tileSprite => tileSprite.type));
 
-            if (x > 0 && tiles[x - 1, y] != null)
-                _currentAvailableTileTypes.Remove(tiles[x - 1, y].GetTileType());
-            if (x < xSize - 1 && tiles[x + 1, y] != null)
-                _currentAvailableTileTypes.Remove(tiles[x + 1, y].GetTileType());
-            if (y > 0 && tiles[x, y - 1] != null)
-                _currentAvailableTileTypes.Remove(tiles[x, y - 1].GetTileType());
+            if (x > 0 && _tiles[x - 1, y] != null)
+                _currentAvailableTileTypes.Remove(_tiles[x - 1, y].GetTileType());
+            if (x < xSize - 1 && _tiles[x + 1, y] != null)
+                _currentAvailableTileTypes.Remove(_tiles[x + 1, y].GetTileType());
+            if (y > 0 && _tiles[x, y - 1] != null)
+                _currentAvailableTileTypes.Remove(_tiles[x, y - 1].GetTileType());
 
             var randomAvailableType = Tile.TileType.Type1; 
             if(_currentAvailableTileTypes.Count > 0)
@@ -297,10 +295,10 @@ namespace Managers
             int destinationY = destinationTile.GetPositionYInBoard();
 
             originTile.UpdatePositionInBoard(destinationX, destinationY);
-            tiles[destinationX, destinationY] = originTile;
+            _tiles[destinationX, destinationY] = originTile;
 
             destinationTile.UpdatePositionInBoard(originX, originY);
-            tiles[originX, originY] = destinationTile;
+            _tiles[originX, originY] = destinationTile;
 
             originTile.SetMoveAction(TileController.TileAction.Swap, destinationTile.transform.position);
             destinationTile.SetMoveAction(TileController.TileAction.Swap, originTile.transform.position);
@@ -316,7 +314,7 @@ namespace Managers
             {
                 for (int y = 0; y < ySize; y++)
                 {
-                    if (MatchResolver.CanMatchAnyInPosition(tiles[x, y]))
+                    if (MatchResolver.CanMatchAnyInPosition(_tiles[x, y]))
                         tilesWithMatches.Add(BoardEntry.Create(x, y));
                 }
             }
@@ -325,36 +323,36 @@ namespace Managers
             for (int i = 0; i < tilesWithMatches.Count; i++)
             {
                 var boardEntry = tilesWithMatches[i];
-                if (tiles[boardEntry.x, boardEntry.y] == null)
+                if (_tiles[boardEntry.x, boardEntry.y] == null)
                 {
                     _allClearMatches--;
                     continue;
                 }
                 yield return new WaitForSeconds(.2f);
-                ClearAllMatchesForTile(tiles[boardEntry.x, boardEntry.y]);
+                ClearAllMatchesForTile(_tiles[boardEntry.x, boardEntry.y]);
             }
         }
 
         private IEnumerator CheckIfAnyMovesIsPossibleOnBoard()
         {
-            yield return new WaitForSeconds(.5f);
+            yield return new WaitUntil(() => !IsBoardBusy);
             bool anyAvailableMatch = false;
             for (int x = 0; x < xSize && !anyAvailableMatch; x++)
             {
                 for (int y = 0; y < ySize && !anyAvailableMatch; y++)
                 {
-                    if(tiles[x,y] == null) continue;
-                    if (x - 1 > 0 && tiles[x - 1, y] != null)
-                        anyAvailableMatch = MatchResolver.CanMatchAnyInPosition(tiles[x, y], tiles[x - 1, y].transform.position);
+                    if(_tiles[x,y] == null) continue;
+                    if (x - 1 > 0 && _tiles[x - 1, y] != null)
+                        anyAvailableMatch = MatchResolver.CanMatchAnyInPosition(_tiles[x, y], _tiles[x - 1, y].transform.position);
                     
-                    if (x + 1 < xSize && tiles[x + 1, y] != null)
-                        anyAvailableMatch = anyAvailableMatch || MatchResolver.CanMatchAnyInPosition(tiles[x, y], tiles[x + 1, y].transform.position);
+                    if (x + 1 < xSize && _tiles[x + 1, y] != null)
+                        anyAvailableMatch = anyAvailableMatch || MatchResolver.CanMatchAnyInPosition(_tiles[x, y], _tiles[x + 1, y].transform.position);
                     
-                    if (y - 1 > 0 && tiles[x, y - 1] != null)
-                        anyAvailableMatch = anyAvailableMatch || MatchResolver.CanMatchAnyInPosition(tiles[x, y], tiles[x, y - 1].transform.position);
+                    if (y - 1 > 0 && _tiles[x, y - 1] != null)
+                        anyAvailableMatch = anyAvailableMatch || MatchResolver.CanMatchAnyInPosition(_tiles[x, y], _tiles[x, y - 1].transform.position);
                     
-                    if (y + 1 < ySize && tiles[x, y + 1] != null)
-                        anyAvailableMatch = anyAvailableMatch || MatchResolver.CanMatchAnyInPosition(tiles[x, y], tiles[x, y + 1].transform.position);
+                    if (y + 1 < ySize && _tiles[x, y + 1] != null)
+                        anyAvailableMatch = anyAvailableMatch || MatchResolver.CanMatchAnyInPosition(_tiles[x, y], _tiles[x, y + 1].transform.position);
                 }
             }
             
@@ -417,8 +415,7 @@ namespace Managers
 
         private void ClearAllMatchesForTile(TileController matchedTile)
         {
-            List<TileController> matches;
-            bool isMatchValid = MatchResolver.ResolveMatch(matchedTile, out matches);
+            bool isMatchValid = MatchResolver.ResolveMatch(matchedTile, out var matches);
 
             if (isMatchValid)
             {
@@ -443,14 +440,16 @@ namespace Managers
                     }
                 }
 
+                GameManager.Instance.UpdateScore(matches.Count + 1); //+1 from matched tile
+                
                 for (int i = 0; i < matches.Count; ++i)
                 {
                     if(matches[i] == null) continue;
-                    tiles[matches[i].GetPositionXInBoard(), matches[i].GetPositionYInBoard()] = null;
+                    _tiles[matches[i].GetPositionXInBoard(), matches[i].GetPositionYInBoard()] = null;
                     matches[i].Play(TileAnimation.Explode);
                 }
                 
-                tiles[matchedTile.GetPositionXInBoard(), matchedTile.GetPositionYInBoard()] = null;
+                _tiles[matchedTile.GetPositionXInBoard(), matchedTile.GetPositionYInBoard()] = null;
                 matchedTile.SetAction(TileController.TileAction.Explode);
                 matchedTile.Play(TileAnimation.Explode);
                 AudioManager.instance.PlayAudio(Clip.Clear);
@@ -471,7 +470,7 @@ namespace Managers
                 for (int y = startY; y <= currentPowerUpTile.GetPositionYInBoard() + 1; ++y)
                 {
                     if(x < 0 || y < 0 || x >= xSize || y >= ySize) continue;
-                    var newCandidateToMatch = tiles[x, y];
+                    var newCandidateToMatch = _tiles[x, y];
                     if(newCandidateToMatch == null) continue;
                     if(currentMatches.Contains(newCandidateToMatch)) continue;
                     
@@ -484,7 +483,7 @@ namespace Managers
 
         private void HandleFreezePowerUp()
         {
-            
+            GameManager.Instance.RequestFreezeTimeFor(5f);
         }
 
         #endregion
