@@ -152,23 +152,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   availableSpriteTiles:
   - type: 0
-    sprite: {fileID: 21300000, guid: b6735aff7b533524b91c26572a387c02, type: 3}
+    sprite: {fileID: 21300000, guid: fc7a2733217e7504e92c12ee29d5daea, type: 3}
   - type: 1
-    sprite: {fileID: 21300000, guid: 19e786310b7dc2040a6b0a4b60ea2626, type: 3}
+    sprite: {fileID: 21300000, guid: db08993957f531740a87878beede7394, type: 3}
   - type: 2
-    sprite: {fileID: 21300000, guid: a264c1b6842421b459988b37369bba6d, type: 3}
+    sprite: {fileID: 21300000, guid: a8a8ac9aa4761184b9521f4f4560e923, type: 3}
   - type: 3
-    sprite: {fileID: 21300000, guid: de6184bd8dfc0fd4aafe809ab058def9, type: 3}
+    sprite: {fileID: 21300000, guid: 70a55c517aa83f14aa67363897c26026, type: 3}
   - type: 4
-    sprite: {fileID: 21300000, guid: 2681e1f7d5cbc774aa3d170f4c0cf20a, type: 3}
+    sprite: {fileID: 21300000, guid: 0f2221f6c55bd4047b66b273fb098c6e, type: 3}
   - type: 5
-    sprite: {fileID: 21300000, guid: 2da2f78b61ea6da4ab11645e60ef9788, type: 3}
+    sprite: {fileID: 21300000, guid: 1bd5e90682ed06c47a1278b9b739ffe7, type: 3}
   tilePrefab: {fileID: 1000010131827792, guid: 23ca29bfb585d2a409e3c42dfc9c2f0f, type: 3}
   xSize: 8
   ySize: 8
   powerUpProbability: 8
   availablePowerUpTiles:
-  - sprite: {fileID: 21300000, guid: a57cfd0aa94833c47b504e347bac032e, type: 3}
+  - sprite: {fileID: 21300000, guid: 542d4f6c46fd39a4da6834aee7774a70, type: 3}
     powerUpType: 1
 --- !u!4 &266661671
 Transform:
@@ -743,6 +743,26 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 3336383292898391720, guid: bd70e7088a304f341a61536601d8266e,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3336383292898391720, guid: bd70e7088a304f341a61536601d8266e,
+        type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3336383292898391720, guid: bd70e7088a304f341a61536601d8266e,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3336383292898391720, guid: bd70e7088a304f341a61536601d8266e,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6892727660021830467, guid: bd70e7088a304f341a61536601d8266e,
         type: 3}
       propertyPath: m_Pivot.x
@@ -750,13 +770,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6892727660021830467, guid: bd70e7088a304f341a61536601d8266e,
         type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6892727660021830467, guid: bd70e7088a304f341a61536601d8266e,
+        type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6892727660021830467, guid: bd70e7088a304f341a61536601d8266e,
+        type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -64.99999
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6892727660021830467, guid: bd70e7088a304f341a61536601d8266e,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -0.00012207031
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6892727660159964237, guid: bd70e7088a304f341a61536601d8266e,
         type: 3}

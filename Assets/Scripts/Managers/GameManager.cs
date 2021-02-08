@@ -53,7 +53,7 @@ namespace Managers
 
         public void UpdateScore(int tilesInMatch)
         {
-            comboStreak += tilesInMatch / 3;
+            comboStreak ++;
             onComboUpdate?.Invoke(comboStreak);
             CancelInvoke(nameof(ComboTimeout));
             Invoke(nameof(ComboTimeout), comboSecondsToReset);

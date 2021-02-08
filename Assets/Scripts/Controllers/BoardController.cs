@@ -27,18 +27,17 @@ namespace Controllers
          * Elements
          */
         [Header("Tile config")]
-        [SerializeField] private List<TileSprite> availableSpriteTiles = new List<TileSprite>();
-
+        [SerializeField] private List<TileEntry> availableSpriteTiles = new List<TileEntry>();
         private readonly List<Tile.TileType> _currentAvailableTileTypes = new List<Tile.TileType>();
         
         [Header("Board config")] [SerializeField]
         private GameObject tilePrefab;
         [SerializeField] private int xSize, ySize;
         private Vector2 _tilesOffset;
-        
-        [Header("Power ups config")]
+
+        [Header("Power ups config")] 
         [SerializeField][Range(1, 100)] private int powerUpProbability;
-        [SerializeField] private List<PowerUpSprite> availablePowerUpTiles = new List<PowerUpSprite>();
+        [SerializeField] private List<PowerUpEntry> availablePowerUpTiles = new List<PowerUpEntry>();
 
         private TileController[,] _tiles;
 
@@ -64,7 +63,7 @@ namespace Controllers
             ClearBoard();
         }
 
-        private void FixedUpdate()
+        private void Update()
         {
             if (!HasClearedMatches) return;
             _clearedMatches = 0;
@@ -123,10 +122,9 @@ namespace Controllers
             GameObject newTile = Instantiate(tilePrefab,
                 new Vector3(startX + (xOffset * x), startY + (yOffset * y), 0),
                 tilePrefab.transform.rotation);
-            var tileController = newTile.GetComponent<TileController>();
-            _tiles[x, y] = tileController;
+            _tiles[x, y] = newTile.GetComponent<TileController>();
             newTile.transform.parent = transform;
-            ConfigureTile(tileController, x, y);
+            ConfigureTile( _tiles[x, y], x, y);
         }
 
         private void ClearBoard()
@@ -146,6 +144,8 @@ namespace Controllers
 
         private IEnumerator FindNullTiles()
         {
+            bool isShifting = true;
+            bool isRefilling = true;
             IsBoardBusy = true;
             for (int x = 0; x < xSize; x++)
             {
@@ -159,6 +159,9 @@ namespace Controllers
                 }
             }
 
+            isShifting = false;
+
+            yield return new WaitUntil(() => !isShifting);
             for (int x = 0; x < xSize; x++)
             {
                 for (int y = 0; y < ySize; y++)
@@ -171,12 +174,15 @@ namespace Controllers
                 }
             }
 
+            isRefilling = false;
+
+            yield return new WaitUntil(() => !isShifting && !isRefilling);
             yield return StartCoroutine(ClearAllMatchesForBoard());
             
             IsBoardBusy = false;
         }
 
-        private IEnumerator ShiftDown(int x, int yStart, float shiftDelay = .03f)
+        private IEnumerator ShiftDown(int x, int yStart, float shiftDelay = .06f)
         {
             int nullCount = 0;
 
@@ -208,7 +214,8 @@ namespace Controllers
         {
             yield return new WaitForSeconds(refillDelay);
             for (int y = yStart; y < ySize; y++)
-                CreateTile(xStart, y);
+                if(_tiles[xStart, y] == null)
+                    CreateTile(xStart, y);
 
         }
 
@@ -219,11 +226,11 @@ namespace Controllers
 
         private void ConfigureTile(TileController newlyCreatedTile, int x, int y)
         {
-            PowerUpSprite powerUp = GetAvailableRandomPowerUpSprite();
-            TileSprite tileSprite = GetAvailableRandomTileSprite(x, y);
+            PowerUpEntry powerUp = GetAvailableRandomPowerUpSprite();
+            TileEntry tileEntry = GetAvailableRandomTileSprite(x, y);
             
-            Tile.TileType type = powerUp?.type ?? tileSprite.type;
-            Sprite sprite = powerUp?.sprite ?? tileSprite.sprite;
+            Tile.TileType type = powerUp?.type ?? tileEntry.type;
+            Sprite sprite = powerUp?.sprite ?? tileEntry.sprite;
             PowerUp.Type powerUpType = powerUp?.powerUpType ?? PowerUp.Type.None;
             
             newlyCreatedTile.gameObject.GetComponent<SpriteRenderer>().sprite = sprite;
@@ -231,12 +238,12 @@ namespace Controllers
             newlyCreatedTile.onActionCompleted += ProcessEndActionCallback;
         }
         
-        private PowerUpSprite GetAvailableRandomPowerUpSprite()
+        private PowerUpEntry GetAvailableRandomPowerUpSprite()
         {
             if (!CanSpawnPowerUp() || availablePowerUpTiles.Count == 0) return null;
             return availablePowerUpTiles[Random.Range(0, availablePowerUpTiles.Count)];
         }
-        private TileSprite GetAvailableRandomTileSprite(int x, int y)
+        private TileEntry GetAvailableRandomTileSprite(int x, int y)
         {
             _currentAvailableTileTypes.Clear();
             _currentAvailableTileTypes.AddRange(availableSpriteTiles.Select(tileSprite => tileSprite.type));
@@ -271,10 +278,8 @@ namespace Controllers
             if (MatchResolver.CanMatchAnyInPosition(SelectedTile, otherTile.transform.position) ||
                 MatchResolver.CanMatchAnyInPosition(otherTile, SelectedTile.transform.position))
             {
-                //can swap
                 SwapTiles(SelectedTile, otherTile);
                 DeselectSelected();
-                //GUIManager.instance.MoveCounter--;
                 return true;
             }
 
@@ -285,7 +290,7 @@ namespace Controllers
 
         private void SwapTiles(TileController originTile, TileController destinationTile)
         {
-            _allClearMatches = 2;
+            _allClearMatches = 2; //default swap : originTile + destinationTile
             BoardPoint originPoint = originTile.GetBoardPoint();
 
             BoardPoint destinationPoint = destinationTile.GetBoardPoint();
@@ -311,21 +316,21 @@ namespace Controllers
                 for (int y = 0; y < ySize; y++)
                 {
                     if (MatchResolver.CanMatchAnyInPosition(_tiles[x, y]))
-                        tilesWithMatches.Add(BoardPoint.Create(x, y));
+                        tilesWithMatches.Add(_tiles[x, y].GetBoardPoint());
                 }
             }
 
             _allClearMatches = tilesWithMatches.Count > 0 ? tilesWithMatches.Count : -1;
             for (int i = 0; i < tilesWithMatches.Count; i++)
             {
-                var boardEntry = tilesWithMatches[i];
-                if (_tiles[boardEntry.x, boardEntry.y] == null)
+                var boardPoint = tilesWithMatches[i];
+                if (_tiles[boardPoint.x, boardPoint.y] == null)
                 {
                     _allClearMatches--;
                     continue;
                 }
-                yield return new WaitForSeconds(.2f);
-                ClearAllMatchesForTile(_tiles[boardEntry.x, boardEntry.y]);
+                yield return new WaitForSeconds(.3f);
+                ClearAllMatchesForTile(_tiles[boardPoint.x, boardPoint.y]);
             }
         }
 
@@ -416,26 +421,8 @@ namespace Controllers
             if (isMatchValid)
             {
                 //handle power up if any in matches
-                if (matchedTile.IsPowerUpTile() || matches.Any(tile => tile.IsPowerUpTile()))
-                {
-                    List<TileController> powerUps = matches.Where(tile => tile.IsPowerUpTile()).ToList();
-                    //also check matchedTile
-                    if(matchedTile.IsPowerUpTile())
-                        powerUps.Add(matchedTile);
-                    for (int i = 0; i < powerUps.Count; ++i)
-                    {
-                        switch (powerUps[i].GetPowerUpTile())
-                        {
-                            case PowerUp.Type.Bomb:
-                                HandleBombPowerUp(powerUps[i], matches, powerUps);
-                                break;
-                            case PowerUp.Type.Freeze:
-                                HandleFreezePowerUp();
-                                break;
-                        }
-                    }
-                }
-
+                PowerUpHandler.HandlePowerUps(matchedTile, matches);
+                
                 GameManager.Instance.UpdateScore(matches.Count + 1); //+1 from matched tile
                 
                 for (int i = 0; i < matches.Count; ++i)
@@ -445,8 +432,8 @@ namespace Controllers
                     _tiles[matchBoardPoint.x, matchBoardPoint.y] = null;
                     matches[i].Play(TileAnimation.Explode);
                 }
+                
                 BoardPoint matchedTileBoardPoint = matchedTile.GetBoardPoint();
-
                 _tiles[matchedTileBoardPoint.x, matchedTileBoardPoint.y] = null;
                 matchedTile.SetAction(TileController.TileAction.Explode);
                 matchedTile.Play(TileAnimation.Explode);
@@ -456,8 +443,30 @@ namespace Controllers
         }
         #endregion
 
-        #region SuperPower Handler
+        /*#region SuperPower Handler
 
+        private void HandlePowerUpsIfAny(TileController matchedTile, List<TileController> matches)
+        {
+            if (!matchedTile.IsPowerUpTile() && !matches.Any(tile => tile.IsPowerUpTile())) return;
+            {
+                List<TileController> powerUps = matches.Where(tile => tile.IsPowerUpTile()).ToList();
+                //also check matchedTile
+                if(matchedTile.IsPowerUpTile())
+                    powerUps.Add(matchedTile);
+                for (int i = 0; i < powerUps.Count; ++i)
+                {
+                    switch (powerUps[i].GetPowerUpTile())
+                    {
+                        case PowerUp.Type.Bomb:
+                            HandleBombPowerUp(powerUps[i], matches, powerUps);
+                            break;
+                        case PowerUp.Type.Freeze:
+                            HandleFreezePowerUp();
+                            break;
+                    }    
+                }
+            }
+        }
         private void HandleBombPowerUp(TileController currentPowerUpTile, List<TileController> currentMatches, List<TileController> powerUpLists)
         {
             BoardPoint powerUpPointInBoard = currentPowerUpTile.GetBoardPoint();
@@ -485,7 +494,7 @@ namespace Controllers
             GameManager.Instance.RequestFreezeTimeFor(5f);
         }
 
-        #endregion
+        #endregion*/
       
     }
 }

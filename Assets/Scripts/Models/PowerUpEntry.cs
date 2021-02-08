@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Models
 {
     [Serializable]
-    public class PowerUpSprite
+    public class PowerUpEntry
     {
         public Sprite sprite;
         public PowerUp.Type powerUpType;
