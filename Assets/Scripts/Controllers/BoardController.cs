@@ -4,6 +4,7 @@ using System.Linq;
 using Managers;
 using Models;
 using UnityEngine;
+using Utils;
 using Random = UnityEngine.Random;
 
 namespace Controllers
@@ -37,8 +38,9 @@ namespace Controllers
 
         [Header("Power ups config")] 
         [SerializeField][Range(1, 100)] private int powerUpProbability;
+        [SerializeField] private PowerUpHandler handler = new PowerUpHandler();
         [SerializeField] private List<PowerUpEntry> availablePowerUpTiles = new List<PowerUpEntry>();
-
+        
         private TileController[,] _tiles;
 
         private TileController SelectedTile { get; set; }
@@ -54,6 +56,7 @@ namespace Controllers
 
         void Start()
         {
+            GetPreferredPowerUp();
             _tilesOffset = tilePrefab.GetComponent<SpriteRenderer>().bounds.size;
             CreateBoard();
         }
@@ -421,7 +424,7 @@ namespace Controllers
             if (isMatchValid)
             {
                 //handle power up if any in matches
-                PowerUpHandler.HandlePowerUps(matchedTile, matches);
+                handler.HandlePowerUps(matchedTile, matches);
                 
                 GameManager.Instance.UpdateScore(matches.Count + 1); //+1 from matched tile
                 
@@ -443,9 +446,17 @@ namespace Controllers
         }
         #endregion
 
-        /*#region SuperPower Handler
+        #region SuperPower Handler
 
-        private void HandlePowerUpsIfAny(TileController matchedTile, List<TileController> matches)
+        private void GetPreferredPowerUp()
+        {
+            string preferredPowerUp = PlayerPrefs.GetString(PlayerPrefHelper.PowerUpKey, null);
+            if (string.IsNullOrEmpty(preferredPowerUp)) return;
+            var powerUpEntry = handler.GetEntryFor(PowerUp.FromString(preferredPowerUp));
+            if(powerUpEntry != null)
+                availablePowerUpTiles.Add(powerUpEntry);
+        }
+        /*private void HandlePowerUpsIfAny(TileController matchedTile, List<TileController> matches)
         {
             if (!matchedTile.IsPowerUpTile() && !matches.Any(tile => tile.IsPowerUpTile())) return;
             {
@@ -487,14 +498,9 @@ namespace Controllers
                         powerUpLists.Add(newCandidateToMatch);
                 }
             }
-        }
+        }*/
 
-        private void HandleFreezePowerUp()
-        {
-            GameManager.Instance.RequestFreezeTimeFor(5f);
-        }
-
-        #endregion*/
+        #endregion
       
     }
 }

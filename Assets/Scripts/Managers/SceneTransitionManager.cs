@@ -1,26 +1,4 @@
-﻿/*
- * Copyright (c) 2017 Razeware LLC
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -30,32 +8,32 @@ namespace Managers
 	public class SceneTransitionManager : MonoBehaviour {
 		public static SceneTransitionManager instance;
 
-		public GameObject faderObj;
-		public Image faderImg;
+		[SerializeField] private GameObject faderObj;
+		[SerializeField] private Image faderImg;
 		public bool gameOver = false;
 
-		public float fadeSpeed = .02f;
+		private bool isReturning = false;
+
+		// Get the current scene name
+		private string currentScene;
+		public string CurrentSceneName => currentScene;
+		
+		[SerializeField] private float fadeSpeed = .02f;
 
 		private Color fadeTransparency = new Color(0, 0, 0, .04f);
-		private string currentScene;
 		private AsyncOperation async;
 
 		void Awake() {
 			// Only 1 Game Manager can exist at a time
 			if (instance == null) {
 				DontDestroyOnLoad(gameObject);
-				instance = GetComponent<SceneTransitionManager>();
+				instance = this;
 				SceneManager.sceneLoaded += OnLevelFinishedLoading;
 			} else {
 				Destroy(gameObject);
 			}
 		}
-
-		void Update() {
-			if (Input.GetKeyDown(KeyCode.Escape)) {
-				ReturnToMenu();
-			}
-		}
+		
 
 		// Load a scene with a specified string name
 		public void LoadScene(string sceneName) {
@@ -104,13 +82,7 @@ namespace Managers
 		public void ActivateScene() {
 			async.allowSceneActivation = true;
 		}
-
-		// Get the current scene name
-		public string CurrentSceneName {
-			get{
-				return currentScene;
-			}
-		}
+		
 
 		public void ExitGame() {
 			// If we are running in a standalone build of the game
@@ -126,17 +98,15 @@ namespace Managers
 #endif
 		}
 
-		private bool isReturning = false;
 		public void ReturnToMenu() {
 			if (isReturning) {
 				return;
 			}
 
-			if (CurrentSceneName != "Menu") {
-				StopAllCoroutines();
-				LoadScene("Menu");
-				isReturning = true;
-			}
+			if (CurrentSceneName == "MainScene") return;
+			StopAllCoroutines();
+			LoadScene("MainScene");
+			isReturning = true;
 		}
 
 	}

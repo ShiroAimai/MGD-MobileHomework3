@@ -84,7 +84,8 @@ namespace Controllers
 
         public void UpdatePositionInBoard(int x, int y)
         {
-            model.point = BoardPoint.Create(x, y);
+            model.point.x = x;
+            model.point.y = y;
         }
         
         public void SetMoveAction(TileAction action, Vector3 nextPosition)
@@ -155,7 +156,6 @@ namespace Controllers
             return hit.collider != null ? hit.collider.gameObject : null;
         }
 
-       
         #endregion
     }
 }

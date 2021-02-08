@@ -1,14 +1,19 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Controllers;
 using Models;
+using UnityEngine;
 
-public static class PowerUpHandler
+[Serializable]
+public class PowerUpHandler
 {
-    private static FreezePowerUp freeze = new FreezePowerUp();
-    private static BombPowerUp bomb = new BombPowerUp();
+    [SerializeField] private List<PowerUpEntry> _powerUpEntries;
+    
+    private FreezePowerUp freeze = new FreezePowerUp();
+    private BombPowerUp bomb = new BombPowerUp();
 
-    public static void HandlePowerUps(TileController matchedTile, List<TileController> matches)
+    public void HandlePowerUps(TileController matchedTile, List<TileController> matches)
     {
         if (!matchedTile.IsPowerUpTile() && !matches.Any(tile => tile.IsPowerUpTile())) return;
         {
@@ -30,5 +35,11 @@ public static class PowerUpHandler
                 }                
             }
         }
+    }
+
+    public PowerUpEntry GetEntryFor(PowerUp.Type type)
+    {
+        return _powerUpEntries.FirstOrDefault(entry => entry.powerUpType == type);
+
     }
 }
