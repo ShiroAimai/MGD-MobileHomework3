@@ -147,49 +147,37 @@ namespace Controllers
 
         private IEnumerator FindNullTiles()
         {
-            bool isShifting = true;
-            bool isRefilling = true;
             IsBoardBusy = true;
+
             for (int x = 0; x < xSize; x++)
             {
                 for (int y = 0; y < ySize; y++)
                 {
-                    if (_tiles[x, y] == null)
-                    {
-                        yield return StartCoroutine(ShiftDown(x, y));
-                        break;
-                    }
+                    if (_tiles[x, y] != null) continue;
+                    yield return StartCoroutine(ShiftDown(x, y));
+                    break;
                 }
             }
 
-            isShifting = false;
-
-            yield return new WaitUntil(() => !isShifting);
             for (int x = 0; x < xSize; x++)
             {
                 for (int y = 0; y < ySize; y++)
                 {
-                    if (_tiles[x, y] == null)
-                    {
-                        yield return StartCoroutine(Refill(x, y));
-                        break;
-                    }
+                    if (_tiles[x, y] != null) continue;
+                    yield return StartCoroutine(Refill(x, y));
+                    break;
                 }
             }
-
-            isRefilling = false;
-
-            yield return new WaitUntil(() => !isShifting && !isRefilling);
+            
             yield return StartCoroutine(ClearAllMatchesForBoard());
             
             IsBoardBusy = false;
         }
 
-        private IEnumerator ShiftDown(int x, int yStart, float shiftDelay = .06f)
+        private IEnumerator ShiftDown(int x, int yStart, float shiftDelay = .03f)
         {
             int nullCount = 0;
-
-            //GUIManager.instance.Score += 50;
+            
             yield return new WaitForSeconds(shiftDelay);
 
             //shift down above match items
@@ -210,15 +198,13 @@ namespace Controllers
                     controller.SetMoveAction(TileController.TileAction.Shift, shiftedPosition);
                 }
             }
-
         }
         
         private IEnumerator Refill(int xStart, int yStart, float refillDelay = 0.2f)
         {
             yield return new WaitForSeconds(refillDelay);
             for (int y = yStart; y < ySize; y++)
-                if(_tiles[xStart, y] == null)
-                    CreateTile(xStart, y);
+                CreateTile(xStart, y);
 
         }
 
@@ -312,6 +298,8 @@ namespace Controllers
 
         private IEnumerator ClearAllMatchesForBoard()
         {
+            yield return new WaitForSeconds(.5f);
+
             List<BoardPoint> tilesWithMatches = new List<BoardPoint>();
             //Check if new matches have been formed
             for (int x = 0; x < xSize; x++)
@@ -332,7 +320,6 @@ namespace Controllers
                     _allClearMatches--;
                     continue;
                 }
-                yield return new WaitForSeconds(.3f);
                 ClearAllMatchesForTile(_tiles[boardPoint.x, boardPoint.y]);
             }
         }
@@ -423,7 +410,7 @@ namespace Controllers
 
             if (isMatchValid)
             {
-                //handle power up if any in matches
+                //handle power up if any in matches or matched tile itself
                 handler.HandlePowerUps(matchedTile, matches);
                 
                 GameManager.Instance.UpdateScore(matches.Count + 1); //+1 from matched tile

@@ -84,8 +84,7 @@ namespace Controllers
 
         public void UpdatePositionInBoard(int x, int y)
         {
-            model.point.x = x;
-            model.point.y = y;
+            model.point = BoardPoint.Create(x, y);
         }
         
         public void SetMoveAction(TileAction action, Vector3 nextPosition)

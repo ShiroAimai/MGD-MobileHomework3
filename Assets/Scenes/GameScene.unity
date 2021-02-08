@@ -235,7 +235,7 @@ MonoBehaviour:
   tilePrefab: {fileID: 1000010131827792, guid: 23ca29bfb585d2a409e3c42dfc9c2f0f, type: 3}
   xSize: 8
   ySize: 8
-  powerUpProbability: 8
+  powerUpProbability: 1
   handler:
     _powerUpEntries:
     - sprite: {fileID: 21300000, guid: 542d4f6c46fd39a4da6834aee7774a70, type: 3}
