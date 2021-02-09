@@ -9,9 +9,10 @@ namespace Managers
         public static GameManager Instance = null;
 
         public Action<float> onTimeUpdate;
+        public Action<bool> onTimeFrozen;
         public Action<int> onScoreUpdate;
         public Action<int> onComboUpdate;
-
+        
         [Header("Time config")]
         private bool isTimeFlowing = true;
         [SerializeField][Tooltip("Game time. In minutes")] private float timeInMinutes = 5f;
@@ -65,6 +66,7 @@ namespace Managers
         public void RequestFreezeTimeFor(float timeInSeconds)
         {
             isTimeFlowing = false;
+            onTimeFrozen?.Invoke(!isTimeFlowing);
             StopCoroutine(UnlockTimeFlowsAfter(timeInSeconds));
             StartCoroutine(UnlockTimeFlowsAfter(timeInSeconds));
         }
@@ -88,6 +90,7 @@ namespace Managers
         {
             yield return new WaitForSeconds(timeInSeconds);
             isTimeFlowing = true;
+            onTimeFrozen?.Invoke(!isTimeFlowing);
         }
 
         #endregion

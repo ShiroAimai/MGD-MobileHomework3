@@ -57,7 +57,7 @@ namespace Controllers
         void Start()
         {
             GetPreferredPowerUp();
-            _tilesOffset = tilePrefab.GetComponent<SpriteRenderer>().bounds.size;
+            _tilesOffset = tilePrefab.GetComponentInChildren<SpriteRenderer>().bounds.size;
             CreateBoard();
         }
 
@@ -222,7 +222,7 @@ namespace Controllers
             Sprite sprite = powerUp?.sprite ?? tileEntry.sprite;
             PowerUp.Type powerUpType = powerUp?.powerUpType ?? PowerUp.Type.None;
             
-            newlyCreatedTile.gameObject.GetComponent<SpriteRenderer>().sprite = sprite;
+            newlyCreatedTile.gameObject.GetComponentInChildren<SpriteRenderer>().sprite = sprite;
             newlyCreatedTile.Init(x, y, type, powerUpType);
             newlyCreatedTile.onActionCompleted += ProcessEndActionCallback;
         }

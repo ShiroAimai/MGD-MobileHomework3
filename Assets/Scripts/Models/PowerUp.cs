@@ -7,7 +7,11 @@ namespace Models
 {
     public abstract class PowerUp
     {
-
+        public static class PowerUpAnimation
+        {
+            public static string Bomb => "Bomb";
+        }
+        
         public enum Type
         {
             None,
@@ -54,6 +58,7 @@ namespace Models
                 matches.Add(nearbyTile);
                 if(nearbyTile.IsPowerUpTile())
                     powerUps.Add(nearbyTile);
+                powerUp.Play(PowerUpAnimation.Bomb);
             }
         }
     }
