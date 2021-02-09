@@ -8,16 +8,18 @@ namespace Managers
     {
         public static GameManager Instance = null;
 
-        public Action<float> onTimeUpdate;
+        public bool gameOver = false;
+        public bool gamePaused = false;
+        
         public Action<bool> onTimeFrozen;
         public Action<int> onScoreUpdate;
         public Action<int> onComboUpdate;
         
         [Header("Time config")]
-        private bool isTimeFlowing = true;
         [SerializeField][Tooltip("Game time. In minutes")] private float timeInMinutes = 5f;
-        private float currentTimeInSeconds;
-
+        public float GameTime => timeInMinutes;
+        private Coroutine frozenTime;
+        
         [Header("Score config")] 
         [SerializeField][Tooltip("How many points a tile is worth")]
         private float pointsPerTile = 10f;
@@ -40,12 +42,7 @@ namespace Managers
             {
                 Destroy(gameObject);
             }
-        }
-
-        private void Start()
-        {
-            currentTimeInSeconds = timeInMinutes * 60; 
-            InvokeRepeating(nameof(UpdateGameTime), 0f, 1f);
+            
         }
 
         #endregion
@@ -65,22 +62,16 @@ namespace Managers
         
         public void RequestFreezeTimeFor(float timeInSeconds)
         {
-            isTimeFlowing = false;
-            onTimeFrozen?.Invoke(!isTimeFlowing);
-            StopCoroutine(UnlockTimeFlowsAfter(timeInSeconds));
-            StartCoroutine(UnlockTimeFlowsAfter(timeInSeconds));
+            onTimeFrozen?.Invoke(true);
+            if(frozenTime != null)
+                StopCoroutine(frozenTime);
+            frozenTime = StartCoroutine(UnlockTimeFlowsAfter(timeInSeconds));
         }
 
         #endregion
 
         #region Private
-
-        private void UpdateGameTime()
-        {
-            if (!isTimeFlowing) return;
-            currentTimeInSeconds--;
-            onTimeUpdate?.Invoke(currentTimeInSeconds);
-        }
+        
         private void ComboTimeout()
         {
             comboStreak = 0;
@@ -89,8 +80,7 @@ namespace Managers
         private IEnumerator UnlockTimeFlowsAfter(float timeInSeconds)
         {
             yield return new WaitForSeconds(timeInSeconds);
-            isTimeFlowing = true;
-            onTimeFrozen?.Invoke(!isTimeFlowing);
+            onTimeFrozen?.Invoke(false);
         }
 
         #endregion

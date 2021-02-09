@@ -7,9 +7,10 @@ namespace Ui
 {
     public class PowerUpSelectionController : MonoBehaviour
     {
-        [SerializeField] private Image bombImage;
-        [SerializeField] private Image freezeImage;
-
+        [SerializeField] private Image powerUp;
+        [SerializeField] private Sprite bomb;
+        [SerializeField] private Sprite freeze;
+        
         private string currentSelection;
         
         void Start()
@@ -18,10 +19,12 @@ namespace Ui
             UpdateCurrentPowerUpSelection(string.IsNullOrEmpty(previouslySelectedPowerUp) ? PowerUp.Type.Bomb.ToPowerUpString() : previouslySelectedPowerUp);
         }
 
-        public void UpdatePowerUpSelection(string powerUp)
+        public void UpdatePowerUpSelection()
         {
-            if (powerUp != null && powerUp == currentSelection) return;
-            UpdateCurrentPowerUpSelection(powerUp);
+            string bombPowerUpName =  PowerUp.Type.Bomb.ToPowerUpString();
+            string freezePowerUpName =  PowerUp.Type.Freeze.ToPowerUpString();
+            string nextPowerUpSelection = currentSelection == bombPowerUpName ? freezePowerUpName : bombPowerUpName;
+            UpdateCurrentPowerUpSelection(nextPowerUpSelection);
         }
 
         private void UpdateCurrentPowerUpSelection(string newSelection)
@@ -31,8 +34,7 @@ namespace Ui
             PlayerPrefs.SetString(PlayerPrefHelper.PowerUpKey, currentSelection); //default init
 
             var isBombPowerUp = currentSelection == PowerUp.Type.Bomb.ToPowerUpString();
-            bombImage.enabled = isBombPowerUp;
-            freezeImage.enabled = !isBombPowerUp;
+            powerUp.sprite = isBombPowerUp ? bomb : freeze;
         }
     }
 }
