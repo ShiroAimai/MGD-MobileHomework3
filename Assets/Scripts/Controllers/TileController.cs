@@ -26,17 +26,19 @@ namespace Controllers
             Click,
             Idle
         }
+        
+        public event Action<TileAction, TileController> onActionCompleted;
 
-        [SerializeField]
-        private Tile model;
         
         private Animator animator;
-        private string SelectionAnim => "isSelected";
+        private Tile model;
 
+        [SerializeField] private float shiftSpeed = 12f;
+        [SerializeField] private float swapSpeed = 5f;
         
+        private string SelectionAnim => "isSelected";
         private Vector3 _targetPosition = Vector3.zero;
         private TileAction _requestedAction = TileAction.Idle;
-        public event Action<TileAction, TileController> onActionCompleted;
         
         #region Lifecycle
         void Awake()
@@ -132,8 +134,9 @@ namespace Controllers
             if (_requestedAction == TileAction.Idle || _targetPosition == Vector3.zero) return;
             if (transform.position != _targetPosition)
             {
+                float speed = _requestedAction == TileAction.Swap ? swapSpeed : shiftSpeed;
                 transform.position =
-                    Vector3.MoveTowards(transform.position, _targetPosition, 5f * Time.fixedDeltaTime);
+                    Vector3.MoveTowards(transform.position, _targetPosition, speed * Time.fixedDeltaTime);
             }
             else
             {

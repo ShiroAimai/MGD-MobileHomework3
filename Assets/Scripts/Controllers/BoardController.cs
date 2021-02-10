@@ -30,11 +30,11 @@ namespace Controllers
         [Header("Tile config")]
         [SerializeField] private List<TileEntry> availableSpriteTiles = new List<TileEntry>();
         private readonly List<Tile.TileType> _currentAvailableTileTypes = new List<Tile.TileType>();
-        
-        [Header("Board config")] [SerializeField]
-        private GameObject tilePrefab;
-        [SerializeField] private int xSize, ySize;
+        [SerializeField] private GameObject tilePrefab;
         private Vector2 _tilesOffset;
+
+        [Header("Board config")] 
+        [SerializeField] private int xSize, ySize;
 
         [Header("Power ups config")] 
         [SerializeField][Range(1, 100)] private int powerUpProbability;
@@ -46,11 +46,17 @@ namespace Controllers
         private TileController SelectedTile;
 
         private bool IsBoardBusy = false;
+        
         private int _clearedMatches = 0;
         private int _allClearMatches = -1;
         private bool HasClearedMatches => _clearedMatches == _allClearMatches;
         private bool AnyMatchToClear => _allClearMatches > 0;
 
+        /*
+         * Routine used to normalize board    
+         */
+        private Coroutine normalizeRoutine;
+        
         #region Lifecycle
 
         void Start()
@@ -68,10 +74,7 @@ namespace Controllers
         private void Update()
         {
             if (!HasClearedMatches) return;
-            IsBoardBusy = true;
             _clearedMatches = 0;
-            StopCoroutine(FindNullTiles());
-            StartCoroutine(FindNullTiles());
             ScheduleBoardCheck();
         }
         
@@ -107,12 +110,8 @@ namespace Controllers
             _tiles = new TileController[xSize, ySize];
 
             for (int x = 0; x < xSize; x++)
-            {
                 for (int y = 0; y < ySize; y++)
-                {
                     CreateTile(x, y);
-                }
-            }
         }
 
         private void CreateTile(int x, int y)
@@ -137,47 +136,43 @@ namespace Controllers
             {
                 for (int y = 0; y < ySize; y++)
                 {
-                    if (_tiles[x, y] != null)
-                    {
-                        _tiles[x, y].onActionCompleted -= ProcessEndActionCallback;
-                        _tiles[x, y] = null;
-                    }
+                    if (_tiles[x, y] == null) continue;
+                    _tiles[x, y].onActionCompleted -= ProcessEndActionCallback;
+                    _tiles[x, y] = null;
                 }
             }
         }
 
         private IEnumerator FindNullTiles()
         {
+            IsBoardBusy = true;
+            
             for (int x = 0; x < xSize; x++)
             {
                 for (int y = 0; y < ySize; y++)
                 {
                     if (_tiles[x, y] != null) continue;
-                    yield return StartCoroutine(ShiftDown(x, y));
+                    ShiftDown(x, y);
                     break;
                 }
             }
 
-            yield return new WaitForSeconds(.3f); //wait for all tiles to shift down
-            
             for (int x = 0; x < xSize; x++)
             {
                 for (int y = 0; y < ySize; y++)
                 {
                     if (_tiles[x, y] != null) continue;
-                    yield return StartCoroutine(Refill(x, y));
+                    yield return new WaitForSeconds(0.15f); //wait for all tiles to shift down
+                    Refill(x, y);
                     break;
                 }
             }
-            
             yield return StartCoroutine(ClearAllMatchesForBoard());
         }
 
-        private IEnumerator ShiftDown(int x, int yStart, float shiftDelay = .03f)
+        private void ShiftDown(int x, int yStart)
         {
             int nullCount = 0;
-            
-            yield return new WaitForSeconds(shiftDelay);
 
             //shift down above match items
             for (int y = yStart; y < ySize; ++y)
@@ -199,12 +194,10 @@ namespace Controllers
             }
         }
         
-        private IEnumerator Refill(int xStart, int yStart, float refillDelay = 0.2f)
+        private void Refill(int xStart, int yStart)
         {
-            yield return new WaitForSeconds(refillDelay);
             for (int y = yStart; y < ySize; y++)
                 CreateTile(xStart, y);
-
         }
 
         private bool CanSpawnPowerUp()
@@ -305,7 +298,7 @@ namespace Controllers
             {
                 for (int y = 0; y < ySize; y++)
                 {
-                    if (MatchResolver.CanMatchAnyInPosition(_tiles[x, y]))
+                    if (_tiles[x, y] != null && MatchResolver.CanMatchAnyInPosition(_tiles[x, y]))
                         tilesWithMatches.Add(_tiles[x, y].GetBoardPoint());
                 }
             }
@@ -367,6 +360,7 @@ namespace Controllers
                     break;
                 case TileController.TileAction.Explode:
                     _clearedMatches++;
+                    TryToNormalizeBoard();
                     break;
                 case TileController.TileAction.Shift:
                     break;
@@ -374,6 +368,13 @@ namespace Controllers
             }
         }
 
+        private void TryToNormalizeBoard()
+        {
+            if(normalizeRoutine != null)
+                StopCoroutine(normalizeRoutine);
+            normalizeRoutine = StartCoroutine(FindNullTiles());
+        }
+        
         private void ProcessTileClick(TileController clickedTile)
         {
             if (IsBoardBusy || GameManager.Instance.IsGameOver || GameManager.Instance.IsGamePaused) return;
@@ -425,7 +426,7 @@ namespace Controllers
                     _tiles[matchBoardPoint.x, matchBoardPoint.y] = null;
                     matches[i].Play(TileAnimation.Explode);
                 }
-                
+
                 BoardPoint matchedTileBoardPoint = matchedTile.GetBoardPoint();
                 _tiles[matchedTileBoardPoint.x, matchedTileBoardPoint.y] = null;
                 matchedTile.SetAction(TileController.TileAction.Explode);
