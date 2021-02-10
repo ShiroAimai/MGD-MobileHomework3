@@ -43,10 +43,9 @@ namespace Controllers
         
         private TileController[,] _tiles;
 
-        private TileController SelectedTile { get; set; }
-        
-        public bool IsBoardBusy { get; private set; }
+        private TileController SelectedTile;
 
+        private bool IsBoardBusy = false;
         private int _clearedMatches = 0;
         private int _allClearMatches = -1;
         private bool HasClearedMatches => _clearedMatches == _allClearMatches;
@@ -69,6 +68,7 @@ namespace Controllers
         private void Update()
         {
             if (!HasClearedMatches) return;
+            IsBoardBusy = true;
             _clearedMatches = 0;
             StopCoroutine(FindNullTiles());
             StartCoroutine(FindNullTiles());
@@ -92,6 +92,7 @@ namespace Controllers
                 return;
             }
 
+            IsBoardBusy = false;
             StopCoroutine(CheckIfAnyMovesIsPossibleOnBoard());
             StartCoroutine(CheckIfAnyMovesIsPossibleOnBoard());
         }
@@ -147,8 +148,6 @@ namespace Controllers
 
         private IEnumerator FindNullTiles()
         {
-            IsBoardBusy = true;
-
             for (int x = 0; x < xSize; x++)
             {
                 for (int y = 0; y < ySize; y++)
@@ -159,6 +158,8 @@ namespace Controllers
                 }
             }
 
+            yield return new WaitForSeconds(.3f); //wait for all tiles to shift down
+            
             for (int x = 0; x < xSize; x++)
             {
                 for (int y = 0; y < ySize; y++)
@@ -170,8 +171,6 @@ namespace Controllers
             }
             
             yield return StartCoroutine(ClearAllMatchesForBoard());
-            
-            IsBoardBusy = false;
         }
 
         private IEnumerator ShiftDown(int x, int yStart, float shiftDelay = .03f)
@@ -299,7 +298,7 @@ namespace Controllers
         private IEnumerator ClearAllMatchesForBoard()
         {
             yield return new WaitForSeconds(.5f);
-
+            if (GameManager.Instance.IsGameOver) yield break;
             List<BoardPoint> tilesWithMatches = new List<BoardPoint>();
             //Check if new matches have been formed
             for (int x = 0; x < xSize; x++)
@@ -320,6 +319,7 @@ namespace Controllers
                     _allClearMatches--;
                     continue;
                 }
+
                 ClearAllMatchesForTile(_tiles[boardPoint.x, boardPoint.y]);
             }
         }
@@ -347,7 +347,10 @@ namespace Controllers
                 }
             }
             
-            Debug.Log($"AVAILABLE MOVES {anyAvailableMatch}");
+            Debug.Log("GameOver " + !anyAvailableMatch);
+
+            if (!anyAvailableMatch)
+                GameManager.Instance.GameOver();
         }
         #endregion
 
@@ -373,7 +376,7 @@ namespace Controllers
 
         private void ProcessTileClick(TileController clickedTile)
         {
-            if (IsBoardBusy) return;
+            if (IsBoardBusy || GameManager.Instance.IsGameOver || GameManager.Instance.IsGamePaused) return;
             if (SelectedTile == clickedTile)
                 DeselectSelected();
             else
@@ -443,49 +446,6 @@ namespace Controllers
             if(powerUpEntry != null)
                 availablePowerUpTiles.Add(powerUpEntry);
         }
-        /*private void HandlePowerUpsIfAny(TileController matchedTile, List<TileController> matches)
-        {
-            if (!matchedTile.IsPowerUpTile() && !matches.Any(tile => tile.IsPowerUpTile())) return;
-            {
-                List<TileController> powerUps = matches.Where(tile => tile.IsPowerUpTile()).ToList();
-                //also check matchedTile
-                if(matchedTile.IsPowerUpTile())
-                    powerUps.Add(matchedTile);
-                for (int i = 0; i < powerUps.Count; ++i)
-                {
-                    switch (powerUps[i].GetPowerUpTile())
-                    {
-                        case PowerUp.Type.Bomb:
-                            HandleBombPowerUp(powerUps[i], matches, powerUps);
-                            break;
-                        case PowerUp.Type.Freeze:
-                            HandleFreezePowerUp();
-                            break;
-                    }    
-                }
-            }
-        }
-        private void HandleBombPowerUp(TileController currentPowerUpTile, List<TileController> currentMatches, List<TileController> powerUpLists)
-        {
-            BoardPoint powerUpPointInBoard = currentPowerUpTile.GetBoardPoint();
-            int startX = powerUpPointInBoard.x - 1;
-            int startY = powerUpPointInBoard.y - 1;
-
-            for (int x = startX; x <= powerUpPointInBoard.x + 1; ++x)
-            {
-                for (int y = startY; y <= powerUpPointInBoard.y + 1; ++y)
-                {
-                    if(x < 0 || y < 0 || x >= xSize || y >= ySize) continue;
-                    var newCandidateToMatch = _tiles[x, y];
-                    if(newCandidateToMatch == null) continue;
-                    if(currentMatches.Contains(newCandidateToMatch)) continue;
-                    
-                    currentMatches.Add(newCandidateToMatch);
-                    if(newCandidateToMatch.IsPowerUpTile())
-                        powerUpLists.Add(newCandidateToMatch);
-                }
-            }
-        }*/
 
         #endregion
       

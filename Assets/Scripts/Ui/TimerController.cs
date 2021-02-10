@@ -22,7 +22,9 @@ namespace Ui
 
         private void Update()
         {
-            if(isTimeFlowing)
+            if(isTimeFlowing && 
+               !GameManager.Instance.IsGameOver && 
+               !GameManager.Instance.IsGamePaused)
                 OnTimerUpdate(Time.deltaTime);
         }
 
@@ -41,6 +43,12 @@ namespace Ui
         private void OnTimerUpdate(float elapsed)
         {
             timeInSeconds -= elapsed;
+            
+            if (timeInSeconds <= 0)
+            {
+                timeInSeconds = 0;
+                GameManager.Instance.GameOver();
+            }
             
             int minutes = ((int) timeInSeconds / 60);
             int seconds = (int) timeInSeconds % 60;

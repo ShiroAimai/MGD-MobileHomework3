@@ -2,12 +2,15 @@
 using UnityEngine.UI;
 using Utils;
 
-public class HighScoreController : MonoBehaviour
+namespace Ui
 {
-    [SerializeField] private Text highScoreText;
-    private void Start()
+    public class HighScoreController : MonoBehaviour
     {
-        string playerHighScore = PlayerPrefs.GetString(PlayerPrefHelper.HighscoreKey, null);
-        highScoreText.text = string.IsNullOrEmpty(playerHighScore) ? "0" : playerHighScore;
+        [SerializeField] private Text highScoreText;
+        private void Start()
+        {
+            int playerHighScore = PlayerPrefs.GetInt(PlayerPrefHelper.HighscoreKey, 0);
+            highScoreText.text = playerHighScore.ToString();
+        }
     }
 }

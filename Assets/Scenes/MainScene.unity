@@ -236,46 +236,6 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -0.000030517578
       objectReference: {fileID: 0}
-    - target: {fileID: 4137506894057778026, guid: 5f787490001b9814a94803aa863ba653,
-        type: 3}
-      propertyPath: m_Text
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4137506894057778026, guid: 5f787490001b9814a94803aa863ba653,
-        type: 3}
-      propertyPath: m_Color.b
-      value: 0.0627451
-      objectReference: {fileID: 0}
-    - target: {fileID: 4137506894057778026, guid: 5f787490001b9814a94803aa863ba653,
-        type: 3}
-      propertyPath: m_Color.g
-      value: 0.10980393
-      objectReference: {fileID: 0}
-    - target: {fileID: 4137506894057778026, guid: 5f787490001b9814a94803aa863ba653,
-        type: 3}
-      propertyPath: m_Color.r
-      value: 0.5568628
-      objectReference: {fileID: 0}
-    - target: {fileID: 4137506894057778026, guid: 5f787490001b9814a94803aa863ba653,
-        type: 3}
-      propertyPath: m_FontData.m_BestFit
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4137506894057778026, guid: 5f787490001b9814a94803aa863ba653,
-        type: 3}
-      propertyPath: m_FontData.m_Alignment
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 4137506894057778026, guid: 5f787490001b9814a94803aa863ba653,
-        type: 3}
-      propertyPath: m_FontData.m_AlignByGeometry
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4137506894057778026, guid: 5f787490001b9814a94803aa863ba653,
-        type: 3}
-      propertyPath: m_FontData.m_HorizontalOverflow
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 4137506894247864069, guid: 5f787490001b9814a94803aa863ba653,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
@@ -398,8 +358,8 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4137506894599115777, guid: 5f787490001b9814a94803aa863ba653,
         type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -0.00012207031
+      propertyPath: m_LocalPosition.y
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 5f787490001b9814a94803aa863ba653, type: 3}

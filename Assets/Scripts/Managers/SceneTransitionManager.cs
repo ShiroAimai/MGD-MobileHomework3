@@ -10,7 +10,6 @@ namespace Managers
 
 		[SerializeField] private GameObject faderObj;
 		[SerializeField] private Image faderImg;
-		public bool gameOver = false;
 
 		private bool isReturning = false;
 
@@ -26,7 +25,6 @@ namespace Managers
 		void Awake() {
 			// Only 1 Game Manager can exist at a time
 			if (instance == null) {
-				DontDestroyOnLoad(gameObject);
 				instance = this;
 				SceneManager.sceneLoaded += OnLevelFinishedLoading;
 			} else {
@@ -85,16 +83,12 @@ namespace Managers
 		
 
 		public void ExitGame() {
-			// If we are running in a standalone build of the game
-#if UNITY_STANDALONE
-			// Quit the application
-			Application.Quit();
-#endif
-
 			// If we are running in the editor
 #if UNITY_EDITOR
 			// Stop playing the scene
 			UnityEditor.EditorApplication.isPlaying = false;
+#else
+			Application.Quit();
 #endif
 		}
 
