@@ -12,6 +12,7 @@ namespace Controllers
         
         public static string Explode => "Explode";
         public static string BlockSwap => "BlockSwap";
+        public static string ShiftEnd => "ShiftEnd";
         
     }
     
