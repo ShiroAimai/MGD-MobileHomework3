@@ -34,7 +34,8 @@ namespace Controllers
         private Vector2 _tilesOffset;
 
         [Header("Board config")] 
-        [SerializeField] private int xSize, ySize;
+        [SerializeField] private int xSize;
+        [SerializeField] private int ySize;
 
         [Header("Power ups config")] 
         [SerializeField][Range(1, 100)] private int powerUpProbability;
@@ -46,16 +47,16 @@ namespace Controllers
         private TileController SelectedTile;
 
         private bool IsBoardBusy = false;
-        
-        private int _clearedMatches = 0;
-        private int _allClearMatches = -1;
-        private bool HasClearedMatches => _clearedMatches == _allClearMatches;
-        private bool AnyMatchToClear => _allClearMatches > 0;
+        private bool anyMatchToClear = false;
 
         /*
          * Routine used to normalize board    
          */
         private Coroutine normalizeRoutine;
+        /*
+         * Routine used to check if board contains at least one possible match
+         */
+        private Coroutine checkRoutine;
         
         #region Lifecycle
 
@@ -71,33 +72,16 @@ namespace Controllers
             ClearBoard();
         }
 
-        private void Update()
-        {
-            if (!HasClearedMatches) return;
-            _clearedMatches = 0;
-            ScheduleBoardCheck();
-        }
-        
         #endregion
 
         #region Board Handler
-        private void ScheduleBoardCheck()
-        {
-            Invoke(nameof(DoBoardCheck), 1f);
-        }
-
         private void DoBoardCheck()
         {
-            if (AnyMatchToClear)
-            {
-                CancelInvoke(nameof(DoBoardCheck));
-                ScheduleBoardCheck();
-                return;
-            }
-
-            IsBoardBusy = false;
-            StopCoroutine(CheckIfAnyMovesIsPossibleOnBoard());
-            StartCoroutine(CheckIfAnyMovesIsPossibleOnBoard());
+            if (anyMatchToClear) return;
+            
+            if(checkRoutine != null)
+                StopCoroutine(checkRoutine);
+            checkRoutine = StartCoroutine(CheckIfAnyMovesIsPossibleOnBoard());
         }
         
         /**
@@ -129,6 +113,50 @@ namespace Controllers
             newTile.transform.parent = transform;
             ConfigureTile( _tiles[x, y], x, y);
         }
+        
+        private bool CanSpawnPowerUp()
+        {
+            return Random.Range(1, 100) <= powerUpProbability;
+        }
+
+        private void ConfigureTile(TileController newlyCreatedTile, int x, int y)
+        {
+            PowerUpEntry powerUp = GetAvailableRandomPowerUpSprite();
+            TileEntry tileEntry = GetAvailableRandomTileSprite(x, y);
+            
+            Tile.TileType type = powerUp?.type ?? tileEntry.type;
+            Sprite sprite = powerUp?.sprite ?? tileEntry.sprite;
+            PowerUp.Type powerUpType = powerUp?.powerUpType ?? PowerUp.Type.None;
+            
+            newlyCreatedTile.gameObject.GetComponentInChildren<SpriteRenderer>().sprite = sprite;
+            newlyCreatedTile.Init(x, y, type, powerUpType);
+            newlyCreatedTile.onActionCompleted += ProcessEndActionCallback;
+        }
+        
+        private PowerUpEntry GetAvailableRandomPowerUpSprite()
+        {
+            if (!CanSpawnPowerUp() || availablePowerUpTiles.Count == 0) return null;
+            return availablePowerUpTiles[Random.Range(0, availablePowerUpTiles.Count)];
+        }
+        private TileEntry GetAvailableRandomTileSprite(int x, int y)
+        {
+            _currentAvailableTileTypes.Clear();
+            _currentAvailableTileTypes.AddRange(availableSpriteTiles.Select(tileSprite => tileSprite.type));
+
+            if (x > 0 && _tiles[x - 1, y] != null)
+                _currentAvailableTileTypes.Remove(_tiles[x - 1, y].GetTileType());
+            if (x < xSize - 1 && _tiles[x + 1, y] != null)
+                _currentAvailableTileTypes.Remove(_tiles[x + 1, y].GetTileType());
+            if (y > 0 && _tiles[x, y - 1] != null)
+                _currentAvailableTileTypes.Remove(_tiles[x, y - 1].GetTileType());
+
+            var randomAvailableType = Tile.TileType.Type1; 
+            if(_currentAvailableTileTypes.Count > 0)
+                randomAvailableType = _currentAvailableTileTypes[Random.Range(0, _currentAvailableTileTypes.Count)];
+            return availableSpriteTiles
+                .FirstOrDefault(spriteTile =>
+                    spriteTile.type == randomAvailableType);
+        }
 
         private void ClearBoard()
         {
@@ -145,8 +173,6 @@ namespace Controllers
 
         private IEnumerator FindNullTiles()
         {
-            IsBoardBusy = true;
-            
             for (int x = 0; x < xSize; x++)
             {
                 for (int y = 0; y < ySize; y++)
@@ -200,50 +226,6 @@ namespace Controllers
                 CreateTile(xStart, y);
         }
 
-        private bool CanSpawnPowerUp()
-        {
-            return Random.Range(1, 100) <= powerUpProbability;
-        }
-
-        private void ConfigureTile(TileController newlyCreatedTile, int x, int y)
-        {
-            PowerUpEntry powerUp = GetAvailableRandomPowerUpSprite();
-            TileEntry tileEntry = GetAvailableRandomTileSprite(x, y);
-            
-            Tile.TileType type = powerUp?.type ?? tileEntry.type;
-            Sprite sprite = powerUp?.sprite ?? tileEntry.sprite;
-            PowerUp.Type powerUpType = powerUp?.powerUpType ?? PowerUp.Type.None;
-            
-            newlyCreatedTile.gameObject.GetComponentInChildren<SpriteRenderer>().sprite = sprite;
-            newlyCreatedTile.Init(x, y, type, powerUpType);
-            newlyCreatedTile.onActionCompleted += ProcessEndActionCallback;
-        }
-        
-        private PowerUpEntry GetAvailableRandomPowerUpSprite()
-        {
-            if (!CanSpawnPowerUp() || availablePowerUpTiles.Count == 0) return null;
-            return availablePowerUpTiles[Random.Range(0, availablePowerUpTiles.Count)];
-        }
-        private TileEntry GetAvailableRandomTileSprite(int x, int y)
-        {
-            _currentAvailableTileTypes.Clear();
-            _currentAvailableTileTypes.AddRange(availableSpriteTiles.Select(tileSprite => tileSprite.type));
-
-            if (x > 0 && _tiles[x - 1, y] != null)
-                _currentAvailableTileTypes.Remove(_tiles[x - 1, y].GetTileType());
-            if (x < xSize - 1 && _tiles[x + 1, y] != null)
-                _currentAvailableTileTypes.Remove(_tiles[x + 1, y].GetTileType());
-            if (y > 0 && _tiles[x, y - 1] != null)
-                _currentAvailableTileTypes.Remove(_tiles[x, y - 1].GetTileType());
-
-            var randomAvailableType = Tile.TileType.Type1; 
-            if(_currentAvailableTileTypes.Count > 0)
-                randomAvailableType = _currentAvailableTileTypes[Random.Range(0, _currentAvailableTileTypes.Count)];
-            return availableSpriteTiles
-                .FirstOrDefault(spriteTile =>
-                    spriteTile.type == randomAvailableType);
-        }
-
         private bool TryToSwapSelectedWith(TileController otherTile)
         {
             if (!SelectedTile) return false;
@@ -261,6 +243,8 @@ namespace Controllers
             {
                 SwapTiles(SelectedTile, otherTile);
                 DeselectSelected();
+                //block user interaction with board until all processes are finished
+                IsBoardBusy = true;
                 return true;
             }
 
@@ -271,7 +255,6 @@ namespace Controllers
 
         private void SwapTiles(TileController originTile, TileController destinationTile)
         {
-            _allClearMatches = 2; //default swap : originTile + destinationTile
             BoardPoint originPoint = originTile.GetBoardPoint();
 
             BoardPoint destinationPoint = destinationTile.GetBoardPoint();
@@ -303,23 +286,21 @@ namespace Controllers
                 }
             }
 
-            _allClearMatches = tilesWithMatches.Count > 0 ? tilesWithMatches.Count : -1;
+            anyMatchToClear = tilesWithMatches.Count > 0;
+            
             for (int i = 0; i < tilesWithMatches.Count; i++)
             {
                 var boardPoint = tilesWithMatches[i];
-                if (_tiles[boardPoint.x, boardPoint.y] == null)
-                {
-                    _allClearMatches--;
-                    continue;
-                }
-
+                if (_tiles[boardPoint.x, boardPoint.y] == null) continue;
                 ClearAllMatchesForTile(_tiles[boardPoint.x, boardPoint.y]);
             }
+            
+            DoBoardCheck();
         }
 
         private IEnumerator CheckIfAnyMovesIsPossibleOnBoard()
         {
-            yield return new WaitUntil(() => !IsBoardBusy);
+            yield return new WaitForSeconds(.2f);
             bool anyAvailableMatch = false;
             for (int x = 0; x < xSize && !anyAvailableMatch; x++)
             {
@@ -339,6 +320,9 @@ namespace Controllers
                         anyAvailableMatch = anyAvailableMatch || MatchResolver.CanMatchAnyInPosition(_tiles[x, y], _tiles[x, y + 1].transform.position);
                 }
             }
+
+            //re-enable user interaction with board
+            IsBoardBusy = false;
             
             Debug.Log("GameOver " + !anyAvailableMatch);
 
@@ -359,10 +343,10 @@ namespace Controllers
                     ClearAllMatchesForTile(tileController);
                     break;
                 case TileController.TileAction.Explode:
-                    _clearedMatches++;
                     TryToNormalizeBoard();
                     break;
                 case TileController.TileAction.Shift:
+                    tileController.Play(TileAnimation.ShiftEnd);
                     break;
                 default: return;
             }
@@ -410,30 +394,26 @@ namespace Controllers
 
         private void ClearAllMatchesForTile(TileController matchedTile)
         {
-            bool isMatchValid = MatchResolver.ResolveMatch(matchedTile, out var matches);
-
-            if (isMatchValid)
+            if (!MatchResolver.ResolveMatch(matchedTile, out var matches)) return;
+            
+            //handle power up if any in matches or matched tile itself
+            handler.HandlePowerUps(matchedTile, matches);
+                
+            GameManager.Instance.UpdateScore(matches.Count + 1); //+1 from matched tile
+                
+            for (int i = 0; i < matches.Count; ++i)
             {
-                //handle power up if any in matches or matched tile itself
-                handler.HandlePowerUps(matchedTile, matches);
-                
-                GameManager.Instance.UpdateScore(matches.Count + 1); //+1 from matched tile
-                
-                for (int i = 0; i < matches.Count; ++i)
-                {
-                    if(matches[i] == null) continue;
-                    BoardPoint matchBoardPoint = matches[i].GetBoardPoint();
-                    _tiles[matchBoardPoint.x, matchBoardPoint.y] = null;
-                    matches[i].Play(TileAnimation.Explode);
-                }
-
-                BoardPoint matchedTileBoardPoint = matchedTile.GetBoardPoint();
-                _tiles[matchedTileBoardPoint.x, matchedTileBoardPoint.y] = null;
-                matchedTile.SetAction(TileController.TileAction.Explode);
-                matchedTile.Play(TileAnimation.Explode);
-                AudioManager.instance.PlayAudio(Clip.Clear);
+                if(matches[i] == null) continue;
+                BoardPoint matchBoardPoint = matches[i].GetBoardPoint();
+                _tiles[matchBoardPoint.x, matchBoardPoint.y] = null;
+                matches[i].Play(TileAnimation.Explode);
             }
-            else _clearedMatches++;
+
+            BoardPoint matchedTileBoardPoint = matchedTile.GetBoardPoint();
+            _tiles[matchedTileBoardPoint.x, matchedTileBoardPoint.y] = null;
+            matchedTile.SetAction(TileController.TileAction.Explode);
+            matchedTile.Play(TileAnimation.Explode);
+            AudioManager.instance.PlayAudio(Clip.Clear);
         }
         #endregion
 
