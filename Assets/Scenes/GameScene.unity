@@ -242,6 +242,10 @@ MonoBehaviour:
       powerUpType: 1
     - sprite: {fileID: 21300000, guid: 0cd39ee28c0d3be45b27d576235a95f3, type: 3}
       powerUpType: 2
+    freeze:
+      freezeTimeDuration: 5
+    bomb:
+      bombRange: 1
   availablePowerUpTiles: []
 --- !u!4 &266661671
 Transform:
@@ -605,6 +609,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 124042599440709942, guid: bd70e7088a304f341a61536601d8266e,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0.45214844
+      objectReference: {fileID: 0}
     - target: {fileID: 2093666085517242420, guid: bd70e7088a304f341a61536601d8266e,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
@@ -753,23 +762,23 @@ PrefabInstance:
     - target: {fileID: 7085161205415752796, guid: bd70e7088a304f341a61536601d8266e,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
-      value: 6
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7085161205415752796, guid: bd70e7088a304f341a61536601d8266e,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Mode
-      value: 1
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 7085161205415752796, guid: bd70e7088a304f341a61536601d8266e,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1310865961}
+      objectReference: {fileID: 1644886245}
     - target: {fileID: 7085161205415752796, guid: bd70e7088a304f341a61536601d8266e,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Target
       value: 
-      objectReference: {fileID: 1644886245}
+      objectReference: {fileID: 1310865961}
     - target: {fileID: 7085161205415752796, guid: bd70e7088a304f341a61536601d8266e,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
@@ -783,12 +792,12 @@ PrefabInstance:
     - target: {fileID: 7085161205415752796, guid: bd70e7088a304f341a61536601d8266e,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: RequestGamePause
+      value: ReturnToMenu
       objectReference: {fileID: 0}
     - target: {fileID: 7085161205415752796, guid: bd70e7088a304f341a61536601d8266e,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_MethodName
-      value: ReturnToMenu
+      value: RequestGamePause
       objectReference: {fileID: 0}
     - target: {fileID: 7085161205415752796, guid: bd70e7088a304f341a61536601d8266e,
         type: 3}
@@ -839,6 +848,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_MethodName
       value: ReloadScene
+      objectReference: {fileID: 0}
+    - target: {fileID: 8289119056298953850, guid: bd70e7088a304f341a61536601d8266e,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_BoolArgument
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8289119056298953850, guid: bd70e7088a304f341a61536601d8266e,
         type: 3}

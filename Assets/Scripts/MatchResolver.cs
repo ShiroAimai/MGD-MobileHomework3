@@ -22,180 +22,171 @@ public class MatchCandidate
 
 public static class MatchResolver
 {
-    private static int MatchMinLength = 2;
+    private static readonly int MatchMinLength = 2;
+
+    #region Public
 
     public static bool ResolveMatch(TileController tile, out List<TileController> matches)
     {
         matches = new List<TileController>();
         if (tile.IsPowerUpTile())
-            ResolveMatchForPowerUpTile(tile, matches);
+            ResolveMatchesForPowerUpTile(tile, matches);
         else
-            ResolveMatchForStandardTile(tile, matches);
+            ResolveMatchesForStandardTile(tile, matches);
 
         return matches.Count > 0;
     }
 
-    private static void ResolveMatchForPowerUpTile(TileController powerUpTile, List<TileController> matches)
-    {
-        var horizontalMatches = FindAllMatchesInPathFromPositionForTile(powerUpTile, AdjacentDirections.Bundle.Horizontal);
-        var leftMatches = horizontalMatches
-            .First(candidate => candidate.direction == AdjacentDirections.Left).candidates
-            .Select(el => el.GetComponent<TileController>())
-            .ToList();
-        var rightMatches = horizontalMatches
-            .First(candidate => candidate.direction == AdjacentDirections.Right).candidates
-            .Select(el => el.GetComponent<TileController>())
-            .ToList();
-
-        if (leftMatches.Count > 0 || rightMatches.Count > 0)
-        {
-            if ((leftMatches.FirstOrDefault()?.GetComponent<TileController>()?.GetTileType() ==
-                 rightMatches.FirstOrDefault()?.GetComponent<TileController>()?.GetTileType()) ||
-                (leftMatches.FirstOrDefault()?.GetComponent<TileController>()?.IsPowerUpTile() == true ||
-                 rightMatches.FirstOrDefault()?.GetComponent<TileController>()?.IsPowerUpTile() == true)
-            )
-            {
-                matches.AddRange(leftMatches);
-                matches.AddRange(rightMatches);
-            }
-            else
-            {
-                if (leftMatches.Count >= MatchMinLength)
-                    matches.AddRange(leftMatches);
-                if (rightMatches.Count >= MatchMinLength)
-                    matches.AddRange(rightMatches);
-            }
-        }
-
-        var verticalMatches = FindAllMatchesInPathFromPositionForTile(powerUpTile, AdjacentDirections.Bundle.Vertical);
-        var upMatches = verticalMatches
-            .First(candidate => candidate.direction == AdjacentDirections.Up).candidates
-            .Select(el => el.GetComponent<TileController>())
-            .ToList();
-        ;
-        var downMatches = verticalMatches
-            .First(candidate => candidate.direction == AdjacentDirections.Down).candidates
-            .Select(el => el.GetComponent<TileController>())
-            .ToList();
-        ;
-        if (upMatches.Count > 0 || downMatches.Count > 0)
-        {
-            if ((upMatches.FirstOrDefault()?.GetComponent<TileController>()?.GetTileType() ==
-                 downMatches.FirstOrDefault()?.GetComponent<TileController>()?.GetTileType()) ||
-                (upMatches.FirstOrDefault()?.GetComponent<TileController>()?.IsPowerUpTile() == true ||
-                 downMatches.FirstOrDefault()?.GetComponent<TileController>()?.IsPowerUpTile() == true)
-            )
-            {
-                matches.AddRange(upMatches);
-                matches.AddRange(downMatches);
-            }
-            else
-            {
-                if (upMatches.Count >= MatchMinLength)
-                    matches.AddRange(upMatches);
-                if (downMatches.Count >= MatchMinLength)
-                    matches.AddRange(downMatches);
-            }
-        }
-    }
-
-    private static void ResolveMatchForStandardTile(TileController tile, List<TileController> matches)
-    {
-        var horizontalMatchCandidates = FindAllMatchesInPathFromPositionForTile(tile, AdjacentDirections.Bundle.Horizontal)
-            .SelectMany(candidate => candidate.candidates.Select(el => el.GetComponent<TileController>()))
-            .ToList();
-        if (horizontalMatchCandidates.Count >= MatchMinLength)
-            matches.AddRange(horizontalMatchCandidates);
-        var verticalMatchCandidates = FindAllMatchesInPathFromPositionForTile(tile, AdjacentDirections.Bundle.Vertical)
-            .SelectMany(candidate => candidate.candidates.Select(el => el.GetComponent<TileController>()))
-            .ToList();
-        if (verticalMatchCandidates.Count >= MatchMinLength)
-            matches.AddRange(verticalMatchCandidates);
-    }
-
-    public static bool CanMatchAnyInPosition(TileController tile, Vector3? position = null)
+    public static bool AreThereAnyMatchesInPosition(TileController tile, Vector3? position = null)
     {
         return tile.IsPowerUpTile()
-            ? CanMatchAnyForPowerUpTile(tile, position)
-            : CanMatchAnyForStandardTile(tile, position);
+            ? CheckMatchesForPowerUpTile(tile, position)
+            : CheckMatchesForStandardTile(tile, position);
     }
 
-    private static bool CanMatchAnyForPowerUpTile(TileController powerUpTile, Vector3? position = null)
-    {
-        bool anyHorizontalMatch = false;
-        var horizontalMatches = FindAllMatchesInPathFromPositionForTile(powerUpTile, AdjacentDirections.Bundle.Horizontal, position);
-        var leftMatches = horizontalMatches
-            .First(candidate => candidate.direction == AdjacentDirections.Left).candidates
-            .Select(el => el.GetComponent<TileController>())
-            .ToList();
-        var rightMatches = horizontalMatches
-            .First(candidate => candidate.direction == AdjacentDirections.Right).candidates
-            .Select(el => el.GetComponent<TileController>())
-            .ToList();
+    #endregion
 
-        if (leftMatches.Count > 0 || rightMatches.Count > 0)
+    #region Private
+
+    private static void ResolveMatchesForPowerUpTile(TileController powerUpTile, List<TileController> matches)
+    {
+        ResolveMatchInPathForPowerUpTile(powerUpTile, AdjacentDirections.Bundle.Horizontal, ref matches);
+        ResolveMatchInPathForPowerUpTile(powerUpTile, AdjacentDirections.Bundle.Vertical, ref matches);
+    }
+
+    private static void ResolveMatchInPathForPowerUpTile(TileController powerUpTile, Vector2[] path,
+        ref List<TileController> matches)
+    {
+        if (path.Length != AdjacentDirections.Bundle.Vertical.Length ||
+            path.Length != AdjacentDirections.Bundle.Horizontal.Length)
         {
-            anyHorizontalMatch = (leftMatches.FirstOrDefault()?.GetComponent<TileController>()?.GetTileType() ==
-                                  rightMatches.FirstOrDefault()?.GetComponent<TileController>()?.GetTileType()) ||
-                                 (leftMatches.FirstOrDefault()?.GetComponent<TileController>()?.IsPowerUpTile() == true ||
-                                 rightMatches.FirstOrDefault()?.GetComponent<TileController>()?.IsPowerUpTile() == true) ||
-                                 leftMatches.Count >= MatchMinLength ||
-                                 rightMatches.Count >= MatchMinLength;
+            Debug.Log("Expected a path containing a direction and its opposite");
+            return;
         }
 
-        bool anyVerticalMatch = false;
-        var verticalMatches = FindAllMatchesInPathFromPositionForTile(powerUpTile, AdjacentDirections.Bundle.Vertical, position);
-        var upMatches = verticalMatches
-            .First(candidate => candidate.direction == AdjacentDirections.Up).candidates
+        var matchesInPath = FindAllMatchesInPathFromPositionForTile(powerUpTile, path);
+
+        var matchesInDirection = matchesInPath
+            .First(candidate => candidate.direction == path[0]).candidates
             .Select(el => el.GetComponent<TileController>())
             .ToList();
-        ;
-        var downMatches = verticalMatches
-            .First(candidate => candidate.direction == AdjacentDirections.Down).candidates
+        var matchesInOppositeDirection = matchesInPath
+            .First(candidate => candidate.direction == path[1]).candidates
             .Select(el => el.GetComponent<TileController>())
             .ToList();
-        ;
-        if (upMatches.Count > 0 || downMatches.Count > 0)
+
+        if (matchesInDirection.Count <= 0 && matchesInOppositeDirection.Count <= 0) return;
+
+        if ((matchesInDirection.FirstOrDefault()?.GetComponent<TileController>()?.GetTileType() ==
+             matchesInOppositeDirection.FirstOrDefault()?.GetComponent<TileController>()?.GetTileType()) ||
+            (matchesInDirection.FirstOrDefault()?.GetComponent<TileController>()?.IsPowerUpTile() == true ||
+             matchesInOppositeDirection.FirstOrDefault()?.GetComponent<TileController>()?.IsPowerUpTile() == true)
+        )
         {
-            anyVerticalMatch = (upMatches.FirstOrDefault()?.GetComponent<TileController>()?.GetTileType() ==
-                                downMatches.FirstOrDefault()?.GetComponent<TileController>()?.GetTileType()) ||
-                               (upMatches.FirstOrDefault()?.GetComponent<TileController>()?.IsPowerUpTile() == true ||
-                                downMatches.FirstOrDefault()?.GetComponent<TileController>()?.IsPowerUpTile() == true) ||
-                               upMatches.Count >= MatchMinLength ||
-                               downMatches.Count >= MatchMinLength;
+            matches.AddRange(matchesInDirection);
+            matches.AddRange(matchesInOppositeDirection);
+        }
+        else
+        {
+            if (matchesInDirection.Count >= MatchMinLength)
+                matches.AddRange(matchesInDirection);
+            if (matchesInOppositeDirection.Count >= MatchMinLength)
+                matches.AddRange(matchesInOppositeDirection);
+        }
+    }
+
+    private static void ResolveMatchesForStandardTile(TileController tile, List<TileController> matches)
+    {
+        ResolveMatchInPathForStandardTile(tile, AdjacentDirections.Bundle.Horizontal, ref matches);
+        ResolveMatchInPathForStandardTile(tile, AdjacentDirections.Bundle.Vertical, ref matches);
+    }
+
+    private static void ResolveMatchInPathForStandardTile(TileController tile, Vector2[] path,
+        ref List<TileController> matches)
+    {
+        var matchesInPath = FindAllMatchesInPathFromPositionForTile(tile, path)
+            .SelectMany(candidate => candidate.candidates.Select(el => el.GetComponent<TileController>()))
+            .ToList();
+        if (matchesInPath.Count >= MatchMinLength)
+            matches.AddRange(matchesInPath);
+    }
+
+    private static bool CheckMatchesInPathForPowerUpTile(TileController powerUpTile, Vector2[] path,
+        Vector3? position = null)
+    {
+        if (path.Length != AdjacentDirections.Bundle.Vertical.Length ||
+            path.Length != AdjacentDirections.Bundle.Horizontal.Length)
+        {
+            Debug.Log("Expected a path containing a direction and its opposite");
+            return false;
         }
 
-        return anyHorizontalMatch || anyVerticalMatch;
+        bool anyMatchesInPath = false;
+
+        var matchesInPath = FindAllMatchesInPathFromPositionForTile(powerUpTile, path, position);
+        var matchesInDirection = matchesInPath
+            .First(candidate => candidate.direction == path[0]).candidates
+            .Select(el => el.GetComponent<TileController>())
+            .ToList();
+        var matchesInOppositeDirection = matchesInPath
+            .First(candidate => candidate.direction == path[1]).candidates
+            .Select(el => el.GetComponent<TileController>())
+            .ToList();
+
+        if (matchesInDirection.Count > 0 || matchesInOppositeDirection.Count > 0)
+        {
+            anyMatchesInPath = (matchesInDirection.FirstOrDefault()?.GetComponent<TileController>()?.GetTileType() ==
+                                matchesInOppositeDirection.FirstOrDefault()?.GetComponent<TileController>()
+                                    ?.GetTileType()) ||
+                               (matchesInDirection.FirstOrDefault()?.GetComponent<TileController>()?.IsPowerUpTile() ==
+                                true ||
+                                matchesInOppositeDirection.FirstOrDefault()?.GetComponent<TileController>()
+                                    ?.IsPowerUpTile() == true) ||
+                               matchesInDirection.Count >= MatchMinLength ||
+                               matchesInOppositeDirection.Count >= MatchMinLength;
+        }
+
+        return anyMatchesInPath;
     }
 
-    private static bool CanMatchAnyForStandardTile(TileController tile, Vector3? position = null)
+    private static bool CheckMatchesForPowerUpTile(TileController powerUpTile, Vector3? position = null)
     {
-        bool horizontalMatches = FindAllMatchesInPathFromPositionForTile(tile, AdjacentDirections.Bundle.Horizontal, position)
-            .Select(candidate => candidate.candidates.Count)
-            .Sum() >= MatchMinLength;
-        bool verticalMatches = FindAllMatchesInPathFromPositionForTile(tile, AdjacentDirections.Bundle.Vertical, position)
-            .Select(candidate => candidate.candidates.Count)
-            .Sum() >= MatchMinLength;
-        return horizontalMatches || verticalMatches;
+        return CheckMatchesInPathForPowerUpTile(powerUpTile, AdjacentDirections.Bundle.Horizontal, position) ||
+               CheckMatchesInPathForPowerUpTile(powerUpTile, AdjacentDirections.Bundle.Vertical, position);
     }
-    
-    private static List<MatchCandidate> FindAllMatchesInPathFromPositionForTile(TileController tile, Vector2[] path, Vector3? position = null)
+
+    private static bool CheckMatchesInPathForStandardTile(TileController tile, Vector2[] path, Vector3? position = null)
+    {
+        return FindAllMatchesInPathFromPositionForTile(tile, path, position)
+            .Select(candidate => candidate.candidates.Count)
+            .Sum() >= MatchMinLength;
+    }
+
+    private static bool CheckMatchesForStandardTile(TileController tile, Vector3? position = null)
+    {
+        return CheckMatchesInPathForStandardTile(tile, AdjacentDirections.Bundle.Horizontal, position) ||
+               CheckMatchesInPathForStandardTile(tile, AdjacentDirections.Bundle.Vertical, position);
+    }
+
+    private static List<MatchCandidate> FindAllMatchesInPathFromPositionForTile(TileController tile, Vector2[] path,
+        Vector3? position = null)
     {
         var startPosition = position ?? tile.transform.position;
         return path
             .Select(dir => FindMatchInDirectionFromPositionForTile(tile, startPosition, dir))
             .ToList();
     }
-        
-    private static MatchCandidate FindMatchInDirectionFromPositionForTile(TileController tile, Vector3 position, Vector2 castDir)
+
+    private static MatchCandidate FindMatchInDirectionFromPositionForTile(TileController tile, Vector3 position,
+        Vector2 castDir)
     {
         Tile.TileType tileType = tile.GetTileType();
-            
+
         MatchCandidate matchCandidate = MatchCandidate.Create(castDir);
-            
+
         RaycastHit2D hit = Physics2D.Raycast(position, castDir);
         while (hit.collider != null &&
-               hit.collider.gameObject != tile.gameObject && 
+               hit.collider.gameObject != tile.gameObject &&
                (tileType == Tile.TileType.PowerUp ||
                 hit.collider.gameObject.GetComponent<TileController>().GetTileType() == tileType ||
                 hit.collider.gameObject.GetComponent<TileController>().IsPowerUpTile())
@@ -204,11 +195,13 @@ public static class MatchResolver
             //take the first item found as default type if power up
             if (tileType == Tile.TileType.PowerUp)
                 tileType = hit.collider.gameObject.GetComponent<TileController>().GetTileType();
-                
+
             matchCandidate.candidates.Add(hit.collider.gameObject);
             hit = Physics2D.Raycast(hit.collider.transform.position, castDir);
         }
-            
+
         return matchCandidate;
     }
+
+    #endregion
 }

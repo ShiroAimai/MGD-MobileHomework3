@@ -10,7 +10,8 @@ namespace Managers
 
 		[SerializeField] private GameObject faderObj;
 		[SerializeField] private Image faderImg;
-
+		[SerializeField] private string menuSceneName = "MainScene";
+		
 		private bool isReturning = false;
 
 		// Get the current scene name
@@ -97,9 +98,9 @@ namespace Managers
 				return;
 			}
 
-			if (CurrentSceneName == "MainScene") return;
+			if (CurrentSceneName == menuSceneName) return;
 			StopAllCoroutines();
-			LoadScene("MainScene");
+			LoadScene(menuSceneName);
 			isReturning = true;
 		}
 

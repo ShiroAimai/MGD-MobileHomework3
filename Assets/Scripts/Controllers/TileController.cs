@@ -132,6 +132,7 @@ namespace Controllers
         }
         private void TryToPerformMoveAction()
         {
+            //in order to perform a move action [_targetPosition] needs to be assigned a value
             if (_requestedAction == TileAction.Idle || _targetPosition == Vector3.zero) return;
             if (transform.position != _targetPosition)
             {

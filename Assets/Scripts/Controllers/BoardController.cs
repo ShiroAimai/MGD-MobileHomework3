@@ -109,9 +109,8 @@ namespace Controllers
             GameObject newTile = Instantiate(tilePrefab,
                 new Vector3(startX + (xOffset * x), startY + (yOffset * y), 0),
                 tilePrefab.transform.rotation);
-            _tiles[x, y] = newTile.GetComponent<TileController>();
             newTile.transform.parent = transform;
-            ConfigureTile( _tiles[x, y], x, y);
+            ConfigureTile(newTile, x, y);
         }
         
         private bool CanSpawnPowerUp()
@@ -119,7 +118,7 @@ namespace Controllers
             return Random.Range(1, 100) <= powerUpProbability;
         }
 
-        private void ConfigureTile(TileController newlyCreatedTile, int x, int y)
+        private void ConfigureTile(GameObject justCreatedTile, int x, int y)
         {
             PowerUpEntry powerUp = GetAvailableRandomPowerUpSprite();
             TileEntry tileEntry = GetAvailableRandomTileSprite(x, y);
@@ -127,10 +126,12 @@ namespace Controllers
             Tile.TileType type = powerUp?.type ?? tileEntry.type;
             Sprite sprite = powerUp?.sprite ?? tileEntry.sprite;
             PowerUp.Type powerUpType = powerUp?.powerUpType ?? PowerUp.Type.None;
+
+            _tiles[x, y] = justCreatedTile.GetComponent<TileController>();
             
-            newlyCreatedTile.gameObject.GetComponentInChildren<SpriteRenderer>().sprite = sprite;
-            newlyCreatedTile.Init(x, y, type, powerUpType);
-            newlyCreatedTile.onActionCompleted += ProcessEndActionCallback;
+            _tiles[x, y].gameObject.GetComponentInChildren<SpriteRenderer>().sprite = sprite;
+            _tiles[x, y].Init(x, y, type, powerUpType);
+            _tiles[x, y].onActionCompleted += ProcessEndActionCallback;
         }
         
         private PowerUpEntry GetAvailableRandomPowerUpSprite()
@@ -238,8 +239,8 @@ namespace Controllers
                 return false;
             }
 
-            if (MatchResolver.CanMatchAnyInPosition(SelectedTile, otherTile.transform.position) ||
-                MatchResolver.CanMatchAnyInPosition(otherTile, SelectedTile.transform.position))
+            if (MatchResolver.AreThereAnyMatchesInPosition(SelectedTile, otherTile.transform.position) ||
+                MatchResolver.AreThereAnyMatchesInPosition(otherTile, SelectedTile.transform.position))
             {
                 SwapTiles(SelectedTile, otherTile);
                 DeselectSelected();
@@ -275,13 +276,14 @@ namespace Controllers
         {
             yield return new WaitForSeconds(.5f);
             if (GameManager.Instance.IsGameOver) yield break;
+            
             List<BoardPoint> tilesWithMatches = new List<BoardPoint>();
             //Check if new matches have been formed
             for (int x = 0; x < xSize; x++)
             {
                 for (int y = 0; y < ySize; y++)
                 {
-                    if (_tiles[x, y] != null && MatchResolver.CanMatchAnyInPosition(_tiles[x, y]))
+                    if (_tiles[x, y] != null && MatchResolver.AreThereAnyMatchesInPosition(_tiles[x, y]))
                         tilesWithMatches.Add(_tiles[x, y].GetBoardPoint());
                 }
             }
@@ -308,16 +310,16 @@ namespace Controllers
                 {
                     if(_tiles[x,y] == null) continue;
                     if (x - 1 > 0 && _tiles[x - 1, y] != null)
-                        anyAvailableMatch = MatchResolver.CanMatchAnyInPosition(_tiles[x, y], _tiles[x - 1, y].transform.position);
+                        anyAvailableMatch = MatchResolver.AreThereAnyMatchesInPosition(_tiles[x, y], _tiles[x - 1, y].transform.position);
                     
                     if (x + 1 < xSize && _tiles[x + 1, y] != null)
-                        anyAvailableMatch = anyAvailableMatch || MatchResolver.CanMatchAnyInPosition(_tiles[x, y], _tiles[x + 1, y].transform.position);
+                        anyAvailableMatch = anyAvailableMatch || MatchResolver.AreThereAnyMatchesInPosition(_tiles[x, y], _tiles[x + 1, y].transform.position);
                     
                     if (y - 1 > 0 && _tiles[x, y - 1] != null)
-                        anyAvailableMatch = anyAvailableMatch || MatchResolver.CanMatchAnyInPosition(_tiles[x, y], _tiles[x, y - 1].transform.position);
+                        anyAvailableMatch = anyAvailableMatch || MatchResolver.AreThereAnyMatchesInPosition(_tiles[x, y], _tiles[x, y - 1].transform.position);
                     
                     if (y + 1 < ySize && _tiles[x, y + 1] != null)
-                        anyAvailableMatch = anyAvailableMatch || MatchResolver.CanMatchAnyInPosition(_tiles[x, y], _tiles[x, y + 1].transform.position);
+                        anyAvailableMatch = anyAvailableMatch || MatchResolver.AreThereAnyMatchesInPosition(_tiles[x, y], _tiles[x, y + 1].transform.position);
                 }
             }
 

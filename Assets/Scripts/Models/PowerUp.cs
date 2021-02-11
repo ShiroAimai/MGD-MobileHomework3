@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Controllers;
 using Managers;
 using UnityEngine;
@@ -42,12 +43,14 @@ namespace Models
             }
         }
     }
+    [Serializable]
     public class BombPowerUp : PowerUp
     {
+        [SerializeField] private int bombRange = 1;
         public void Explode(TileController powerUp, List<TileController> powerUps, List<TileController> matches)
         {
             Collider2D[] hits = new Collider2D[9];
-            Physics2D.OverlapBoxNonAlloc(powerUp.transform.position, Vector2.one, 0f, hits);
+            Physics2D.OverlapBoxNonAlloc(powerUp.transform.position, Vector2.one * bombRange, 0f, hits);
 
             for (int i = 0; i < hits.Length; ++i)
             {
@@ -63,9 +66,10 @@ namespace Models
         }
     }
     
+    [Serializable]
     public class FreezePowerUp : PowerUp
     {
-        private const float freezeTimeDuration = 5f;
+        [SerializeField] private float freezeTimeDuration = 5f;
         
         public void FreezeTime() 
         {

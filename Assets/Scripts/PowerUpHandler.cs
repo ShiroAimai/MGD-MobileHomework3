@@ -10,8 +10,8 @@ public class PowerUpHandler
 {
     [SerializeField] private List<PowerUpEntry> _powerUpEntries;
     
-    private FreezePowerUp freeze = new FreezePowerUp();
-    private BombPowerUp bomb = new BombPowerUp();
+    [SerializeField] private FreezePowerUp freeze = new FreezePowerUp();
+    [SerializeField] private BombPowerUp bomb = new BombPowerUp();
 
     public void HandlePowerUps(TileController matchedTile, List<TileController> matches)
     {
