@@ -49,7 +49,7 @@ namespace Controllers
         
         private void FixedUpdate()
         {
-            TryToPerformMoveAction();
+            TryToPerformMoveAction(Time.fixedDeltaTime);
         }
 
         private void OnMouseDown()
@@ -130,7 +130,7 @@ namespace Controllers
             onActionCompleted?.Invoke(_requestedAction, this);
             Destroy(gameObject);
         }
-        private void TryToPerformMoveAction()
+        private void TryToPerformMoveAction(float deltaTime)
         {
             //in order to perform a move action [_targetPosition] needs to be assigned a value
             if (_requestedAction == TileAction.Idle || _targetPosition == Vector3.zero) return;
@@ -138,7 +138,7 @@ namespace Controllers
             {
                 float speed = _requestedAction == TileAction.Swap ? swapSpeed : shiftSpeed;
                 transform.position =
-                    Vector3.MoveTowards(transform.position, _targetPosition, speed * Time.fixedDeltaTime);
+                    Vector3.MoveTowards(transform.position, _targetPosition, speed * deltaTime);
             }
             else
             {

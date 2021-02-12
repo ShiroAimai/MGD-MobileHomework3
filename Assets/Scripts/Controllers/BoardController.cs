@@ -133,6 +133,16 @@ namespace Controllers
             _tiles[x, y].Init(x, y, type, powerUpType);
             _tiles[x, y].onActionCompleted += ProcessEndActionCallback;
         }
+
+        private void ResetTileAtPoint(int x, int y)
+        {
+            _tiles[x, y] = null;
+        }
+
+        private bool IsTileValidAtPoint(int x, int y)
+        {
+            return _tiles[x, y] != null;
+        }
         
         private PowerUpEntry GetAvailableRandomPowerUpSprite()
         {
@@ -144,11 +154,11 @@ namespace Controllers
             _currentAvailableTileTypes.Clear();
             _currentAvailableTileTypes.AddRange(availableSpriteTiles.Select(tileSprite => tileSprite.type));
 
-            if (x > 0 && _tiles[x - 1, y] != null)
+            if (x > 0 && IsTileValidAtPoint(x - 1, y))
                 _currentAvailableTileTypes.Remove(_tiles[x - 1, y].GetTileType());
-            if (x < xSize - 1 && _tiles[x + 1, y] != null)
+            if (x < xSize - 1 && IsTileValidAtPoint(x + 1, y))
                 _currentAvailableTileTypes.Remove(_tiles[x + 1, y].GetTileType());
-            if (y > 0 && _tiles[x, y - 1] != null)
+            if (y > 0 && IsTileValidAtPoint(x, y - 1))
                 _currentAvailableTileTypes.Remove(_tiles[x, y - 1].GetTileType());
 
             var randomAvailableType = Tile.TileType.Type1; 
@@ -165,9 +175,9 @@ namespace Controllers
             {
                 for (int y = 0; y < ySize; y++)
                 {
-                    if (_tiles[x, y] == null) continue;
+                    if (!IsTileValidAtPoint(x, y)) continue;
                     _tiles[x, y].onActionCompleted -= ProcessEndActionCallback;
-                    _tiles[x, y] = null;
+                    ResetTileAtPoint(x, y);
                 }
             }
         }
@@ -178,18 +188,20 @@ namespace Controllers
             {
                 for (int y = 0; y < ySize; y++)
                 {
-                    if (_tiles[x, y] != null) continue;
+                    if (IsTileValidAtPoint(x, y)) continue;
                     ShiftDown(x, y);
                     break;
                 }
             }
 
+            var wait = new WaitForSeconds(0.15f);//wait for all tiles to shift down
+            
             for (int x = 0; x < xSize; x++)
             {
                 for (int y = 0; y < ySize; y++)
                 {
-                    if (_tiles[x, y] != null) continue;
-                    yield return new WaitForSeconds(0.15f); //wait for all tiles to shift down
+                    if (IsTileValidAtPoint(x, y)) continue;
+                    yield return wait; 
                     Refill(x, y);
                     break;
                 }
@@ -204,17 +216,18 @@ namespace Controllers
             //shift down above match items
             for (int y = yStart; y < ySize; ++y)
             {
-                TileController controller = _tiles[x, y];
-                if (controller == null)
+                if (!IsTileValidAtPoint(x, y))
                 {
                     nullCount++;
                 }
                 else
                 {
+                    TileController controller = _tiles[x, y];
+
                     Vector3 shiftedPosition = controller.transform.position;
                     shiftedPosition.y -= _tilesOffset.y * nullCount;
                     _tiles[x, y - nullCount] = controller;
-                    _tiles[x, y] = null;
+                    ResetTileAtPoint(x, y);
                     controller.UpdatePositionInBoard(x, y - nullCount);
                     controller.SetMoveAction(TileController.TileAction.Shift, shiftedPosition);
                 }
@@ -283,7 +296,7 @@ namespace Controllers
             {
                 for (int y = 0; y < ySize; y++)
                 {
-                    if (_tiles[x, y] != null && MatchResolver.AreThereAnyMatchesInPosition(_tiles[x, y]))
+                    if (IsTileValidAtPoint(x, y) && MatchResolver.AreThereAnyMatchesInPosition(_tiles[x, y]))
                         tilesWithMatches.Add(_tiles[x, y].GetBoardPoint());
                 }
             }
@@ -293,7 +306,7 @@ namespace Controllers
             for (int i = 0; i < tilesWithMatches.Count; i++)
             {
                 var boardPoint = tilesWithMatches[i];
-                if (_tiles[boardPoint.x, boardPoint.y] == null) continue;
+                if (!IsTileValidAtPoint(boardPoint.x, boardPoint.y)) continue;
                 ClearAllMatchesForTile(_tiles[boardPoint.x, boardPoint.y]);
             }
             
@@ -308,17 +321,17 @@ namespace Controllers
             {
                 for (int y = 0; y < ySize && !anyAvailableMatch; y++)
                 {
-                    if(_tiles[x,y] == null) continue;
-                    if (x - 1 > 0 && _tiles[x - 1, y] != null)
+                    if(!IsTileValidAtPoint(x, y)) continue;
+                    if (x - 1 > 0 && IsTileValidAtPoint(x - 1, y))
                         anyAvailableMatch = MatchResolver.AreThereAnyMatchesInPosition(_tiles[x, y], _tiles[x - 1, y].transform.position);
                     
-                    if (x + 1 < xSize && _tiles[x + 1, y] != null)
+                    if (x + 1 < xSize && IsTileValidAtPoint(x + 1, y))
                         anyAvailableMatch = anyAvailableMatch || MatchResolver.AreThereAnyMatchesInPosition(_tiles[x, y], _tiles[x + 1, y].transform.position);
                     
-                    if (y - 1 > 0 && _tiles[x, y - 1] != null)
+                    if (y - 1 > 0 && IsTileValidAtPoint(x, y - 1))
                         anyAvailableMatch = anyAvailableMatch || MatchResolver.AreThereAnyMatchesInPosition(_tiles[x, y], _tiles[x, y - 1].transform.position);
                     
-                    if (y + 1 < ySize && _tiles[x, y + 1] != null)
+                    if (y + 1 < ySize && IsTileValidAtPoint(x, y + 1))
                         anyAvailableMatch = anyAvailableMatch || MatchResolver.AreThereAnyMatchesInPosition(_tiles[x, y], _tiles[x, y + 1].transform.position);
                 }
             }
@@ -407,12 +420,12 @@ namespace Controllers
             {
                 if(matches[i] == null) continue;
                 BoardPoint matchBoardPoint = matches[i].GetBoardPoint();
-                _tiles[matchBoardPoint.x, matchBoardPoint.y] = null;
+                ResetTileAtPoint(matchBoardPoint.x, matchBoardPoint.y);
                 matches[i].Play(TileAnimation.Explode);
             }
 
             BoardPoint matchedTileBoardPoint = matchedTile.GetBoardPoint();
-            _tiles[matchedTileBoardPoint.x, matchedTileBoardPoint.y] = null;
+            ResetTileAtPoint(matchedTileBoardPoint.x, matchedTileBoardPoint.y);
             matchedTile.SetAction(TileController.TileAction.Explode);
             matchedTile.Play(TileAnimation.Explode);
             AudioManager.instance.PlayAudio(Clip.Clear);
