@@ -28,20 +28,13 @@ namespace Controllers
          * Elements
          */
         [Header("Tile config")]
-        [SerializeField] private List<TileEntry> availableSpriteTiles = new List<TileEntry>();
-        private readonly List<Tile.TileType> _currentAvailableTileTypes = new List<Tile.TileType>();
-        [SerializeField] private GameObject tilePrefab;
-        private Vector2 _tilesOffset;
+        [SerializeField] private List<Tile> tiles = new List<Tile>();
+        private readonly List<TileState.TileType> _currentAvailableTileTypes = new List<TileState.TileType>();
 
-        [Header("Board config")] 
+        [Header("Board config")]
         [SerializeField] private int xSize;
         [SerializeField] private int ySize;
 
-        [Header("Power ups config")] 
-        [SerializeField][Range(1, 100)] private int powerUpProbability;
-        [SerializeField] private PowerUpHandler handler = new PowerUpHandler();
-        [SerializeField] private List<PowerUpEntry> availablePowerUpTiles = new List<PowerUpEntry>();
-        
         private TileController[,] _tiles;
 
         private TileController SelectedTile;
@@ -60,10 +53,9 @@ namespace Controllers
         
         #region Lifecycle
 
-        void Start()
+        private void Start()
         {
             GetPreferredPowerUp();
-            _tilesOffset = tilePrefab.GetComponentInChildren<SpriteRenderer>().bounds.size;
             CreateBoard();
         }
 
@@ -103,35 +95,70 @@ namespace Controllers
             float startX = transform.position.x;
             float startY = transform.position.y;
 
+            TileConfig tileConfigToSpawn = GetTileToSpawn();
+
+            var _tilesOffset = tileConfigToSpawn.prefab.GetComponentInChildren<SpriteRenderer>().bounds.size;
+            
             float xOffset = _tilesOffset.x;
             float yOffset = _tilesOffset.y;
 
-            GameObject newTile = Instantiate(tilePrefab,
+            GameObject newTile = Instantiate(tileConfigToSpawn.prefab,
                 new Vector3(startX + (xOffset * x), startY + (yOffset * y), 0),
-                tilePrefab.transform.rotation);
+                tileConfigToSpawn.prefab.transform.rotation);
             newTile.transform.parent = transform;
-            ConfigureTile(newTile, x, y);
+            ConfigureTile(newTile, tileConfigToSpawn, x, y);
+        }
+
+        private void ConfigureTile(GameObject justCreatedTile, TileConfig config, int x, int y)
+        {
+            TileEntry entry = GetAvailableRandomTileEntry(config.entries, x, y);
+            
+            if (entry == null) return;
+            
+            _tiles[x, y] = justCreatedTile.GetComponent<TileController>();
+            _tiles[x, y].Init(x, y, entry);
+            _tiles[x, y].onActionCompleted += ProcessEndActionCallback;
+        }
+
+        private TileConfig GetTileToSpawn()
+        {
+            List<TileConfig> activeTiles = tiles.Where(tile => tile.enabled).Select(tile => tile.config).ToList();
+
+            var maxWeight = activeTiles.Sum(config => config.spawnProbability);
+            var spawnProbability = Random.Range(0, maxWeight);
+
+            TileConfig selection = null;
+            for (int i = 0; i < activeTiles.Count && selection == null; ++i)
+            {
+                if (spawnProbability < activeTiles[i].spawnProbability) 
+                    selection = activeTiles[i];
+                spawnProbability -= activeTiles[i].spawnProbability;
+            }
+
+            return selection;
         }
         
-        private bool CanSpawnPowerUp()
+        private TileEntry GetAvailableRandomTileEntry(List<TileEntry> entries,int x, int y)
         {
-            return Random.Range(1, 100) <= powerUpProbability;
-        }
-
-        private void ConfigureTile(GameObject justCreatedTile, int x, int y)
-        {
-            PowerUpEntry powerUp = GetAvailableRandomPowerUpSprite();
-            TileEntry tileEntry = GetAvailableRandomTileSprite(x, y);
+            if (entries.Count <= 0) return null;
             
-            Tile.TileType type = powerUp?.type ?? tileEntry.type;
-            Sprite sprite = powerUp?.sprite ?? tileEntry.sprite;
-            PowerUp.Type powerUpType = powerUp?.powerUpType ?? PowerUp.Type.None;
-
-            _tiles[x, y] = justCreatedTile.GetComponent<TileController>();
+            _currentAvailableTileTypes.Clear();
+            _currentAvailableTileTypes.AddRange(entries.Select(tileSprite => tileSprite.type));
             
-            _tiles[x, y].gameObject.GetComponentInChildren<SpriteRenderer>().sprite = sprite;
-            _tiles[x, y].Init(x, y, type, powerUpType);
-            _tiles[x, y].onActionCompleted += ProcessEndActionCallback;
+            if (x > 0 && IsTileValidAtPoint(x - 1, y))
+                _currentAvailableTileTypes.Remove(_tiles[x - 1, y].GetTileType());
+            if (x < xSize - 1 && IsTileValidAtPoint(x + 1, y))
+                _currentAvailableTileTypes.Remove(_tiles[x + 1, y].GetTileType());
+            if (y > 0 && IsTileValidAtPoint(x, y - 1))
+                _currentAvailableTileTypes.Remove(_tiles[x, y - 1].GetTileType());
+
+            TileState.TileType randomType = _currentAvailableTileTypes.Count > 0
+                ? _currentAvailableTileTypes[Random.Range(0, _currentAvailableTileTypes.Count)]
+                : entries.First().type;
+            
+            return entries
+                .FirstOrDefault(spriteTile =>
+                    spriteTile.type == randomType);
         }
 
         private void ResetTileAtPoint(int x, int y)
@@ -142,31 +169,6 @@ namespace Controllers
         private bool IsTileValidAtPoint(int x, int y)
         {
             return _tiles[x, y] != null;
-        }
-        
-        private PowerUpEntry GetAvailableRandomPowerUpSprite()
-        {
-            if (!CanSpawnPowerUp() || availablePowerUpTiles.Count == 0) return null;
-            return availablePowerUpTiles[Random.Range(0, availablePowerUpTiles.Count)];
-        }
-        private TileEntry GetAvailableRandomTileSprite(int x, int y)
-        {
-            _currentAvailableTileTypes.Clear();
-            _currentAvailableTileTypes.AddRange(availableSpriteTiles.Select(tileSprite => tileSprite.type));
-
-            if (x > 0 && IsTileValidAtPoint(x - 1, y))
-                _currentAvailableTileTypes.Remove(_tiles[x - 1, y].GetTileType());
-            if (x < xSize - 1 && IsTileValidAtPoint(x + 1, y))
-                _currentAvailableTileTypes.Remove(_tiles[x + 1, y].GetTileType());
-            if (y > 0 && IsTileValidAtPoint(x, y - 1))
-                _currentAvailableTileTypes.Remove(_tiles[x, y - 1].GetTileType());
-
-            var randomAvailableType = Tile.TileType.Type1; 
-            if(_currentAvailableTileTypes.Count > 0)
-                randomAvailableType = _currentAvailableTileTypes[Random.Range(0, _currentAvailableTileTypes.Count)];
-            return availableSpriteTiles
-                .FirstOrDefault(spriteTile =>
-                    spriteTile.type == randomAvailableType);
         }
 
         private void ClearBoard()
@@ -225,6 +227,8 @@ namespace Controllers
                     TileController controller = _tiles[x, y];
 
                     Vector3 shiftedPosition = controller.transform.position;
+
+                    var _tilesOffset = controller.gameObject.GetComponentInChildren<SpriteRenderer>().bounds.size;
                     shiftedPosition.y -= _tilesOffset.y * nullCount;
                     _tiles[x, y - nullCount] = controller;
                     ResetTileAtPoint(x, y);
@@ -412,7 +416,8 @@ namespace Controllers
             if (!MatchResolver.ResolveMatch(matchedTile, out var matches)) return;
             
             //handle power up if any in matches or matched tile itself
-            handler.HandlePowerUps(matchedTile, matches);
+            //handler.HandlePowerUps(matchedTile, matches);
+            ExecutePowerUpsBehavior(matchedTile, matches);
                 
             GameManager.Instance.UpdateScore(matches.Count + 1); //+1 from matched tile
                 
@@ -438,11 +443,26 @@ namespace Controllers
         {
             string preferredPowerUp = PlayerPrefs.GetString(PlayerPrefHelper.PowerUpKey, null);
             if (string.IsNullOrEmpty(preferredPowerUp)) return;
-            var powerUpEntry = handler.GetEntryFor(PowerUp.FromString(preferredPowerUp));
-            if(powerUpEntry != null)
-                availablePowerUpTiles.Add(powerUpEntry);
+            var powerUpToEnable = tiles.FirstOrDefault(tile => tile.config.powerUp == PowerUp.FromString(preferredPowerUp));
+            if (powerUpToEnable != null)
+                powerUpToEnable.enabled = true;
         }
 
+        private void ExecutePowerUpsBehavior(TileController matchedTile, List<TileController> matches)
+        {
+            if (!matchedTile.IsPowerUpTile() && !matches.Any(tile => tile.IsPowerUpTile())) return;
+            {
+                List<TileController> powerUps = matches.Where(tile => tile.IsPowerUpTile()).ToList();
+                //also check matchedTile
+                if(matchedTile.IsPowerUpTile())
+                    powerUps.Add(matchedTile);
+                
+                MatchContext context = MatchContext.Create(matches, powerUps);
+                for (int i = 0; i < powerUps.Count; ++i)
+                    powerUps[i].GetComponent<PowerUp>()?.Execute(context);
+
+            }
+        }
         #endregion
       
     }

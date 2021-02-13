@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2256b643fd714f1da3dc5d8af89be5b2, type: 3}
+  m_Name: Tile
+  m_EditorClassIdentifier: 
+  prefab: {fileID: 1000010131827792, guid: 23ca29bfb585d2a409e3c42dfc9c2f0f, type: 3}
+  entries:
+  - type: 0
+    sprite: {fileID: 21300000, guid: fc7a2733217e7504e92c12ee29d5daea, type: 3}
+  - type: 1
+    sprite: {fileID: 21300000, guid: a8a8ac9aa4761184b9521f4f4560e923, type: 3}
+  - type: 2
+    sprite: {fileID: 21300000, guid: db08993957f531740a87878beede7394, type: 3}
+  - type: 3
+    sprite: {fileID: 21300000, guid: 70a55c517aa83f14aa67363897c26026, type: 3}
+  - type: 4
+    sprite: {fileID: 21300000, guid: 0f2221f6c55bd4047b66b273fb098c6e, type: 3}
+  - type: 5
+    sprite: {fileID: 21300000, guid: 1bd5e90682ed06c47a1278b9b739ffe7, type: 3}
+  powerUp: 0
+  spawnProbability: 8

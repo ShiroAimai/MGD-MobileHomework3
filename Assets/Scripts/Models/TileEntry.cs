@@ -4,9 +4,9 @@ using UnityEngine;
 namespace Models
 {
     [Serializable]
-    public struct TileEntry
+    public class TileEntry
     {
-        public Tile.TileType type;
+        public TileState.TileType type;
         public Sprite sprite;
     }
 }

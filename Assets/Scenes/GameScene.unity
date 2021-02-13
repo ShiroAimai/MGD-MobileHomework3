@@ -219,34 +219,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f19c99a3f7d3d5444aa53d5a0f8e2354, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  availableSpriteTiles:
-  - type: 0
-    sprite: {fileID: 21300000, guid: fc7a2733217e7504e92c12ee29d5daea, type: 3}
-  - type: 1
-    sprite: {fileID: 21300000, guid: db08993957f531740a87878beede7394, type: 3}
-  - type: 2
-    sprite: {fileID: 21300000, guid: a8a8ac9aa4761184b9521f4f4560e923, type: 3}
-  - type: 3
-    sprite: {fileID: 21300000, guid: 70a55c517aa83f14aa67363897c26026, type: 3}
-  - type: 4
-    sprite: {fileID: 21300000, guid: 0f2221f6c55bd4047b66b273fb098c6e, type: 3}
-  - type: 5
-    sprite: {fileID: 21300000, guid: 1bd5e90682ed06c47a1278b9b739ffe7, type: 3}
-  tilePrefab: {fileID: 1000010131827792, guid: 23ca29bfb585d2a409e3c42dfc9c2f0f, type: 3}
+  tiles:
+  - config: {fileID: 11400000, guid: 3689c17644328114bba9185b0d890635, type: 2}
+    enabled: 1
+  - config: {fileID: 11400000, guid: 3e3978ce177fd2b48b03dad6b0dc7486, type: 2}
+    enabled: 0
+  - config: {fileID: 11400000, guid: 7ea4e0190421b794ea657c05a9e62f52, type: 2}
+    enabled: 0
   xSize: 8
   ySize: 8
-  powerUpProbability: 8
-  handler:
-    _powerUpEntries:
-    - sprite: {fileID: 21300000, guid: 426838be98cdfcc438f7880d4b4f2cb8, type: 3}
-      powerUpType: 1
-    - sprite: {fileID: 21300000, guid: 0cd39ee28c0d3be45b27d576235a95f3, type: 3}
-      powerUpType: 2
-    freeze:
-      freezeTimeDuration: 5
-    bomb:
-      bombRange: 1
-  availablePowerUpTiles: []
 --- !u!4 &266661671
 Transform:
   m_ObjectHideFlags: 0
@@ -259,7 +240,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &447987981
 GameObject:
@@ -916,7 +897,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1367969923
 GameObject:

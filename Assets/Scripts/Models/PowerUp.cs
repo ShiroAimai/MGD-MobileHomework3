@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using Controllers;
-using Managers;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace Models
 {
-    public abstract class PowerUp
+    public abstract class PowerUp : MonoBehaviour
     {
-        public static class PowerUpAnimation
+        protected static class PowerUpAnimation
         {
             public static string Bomb => "Bomb";
         }
@@ -28,7 +24,8 @@ namespace Models
                 return Type.Freeze;
             return Type.None;
         }
-        
+
+        public abstract void Execute(MatchContext context);
     }
 
     public static class PowerUpTypeExtension
@@ -43,39 +40,4 @@ namespace Models
             }
         }
     }
-    [Serializable]
-    public class BombPowerUp : PowerUp
-    {
-        [SerializeField] private int bombRange = 1;
-        public void Explode(TileController powerUp, List<TileController> powerUps, List<TileController> matches)
-        {
-            Collider2D[] hits = new Collider2D[9];
-            Physics2D.OverlapBoxNonAlloc(powerUp.transform.position, Vector2.one * bombRange, 0f, hits);
-
-            for (int i = 0; i < hits.Length; ++i)
-            {
-                var nearbyTile = hits[i]?.gameObject?.GetComponent<TileController>();
-                if(nearbyTile == null) continue;
-                if(matches.Contains(nearbyTile)) continue; //already got that tile
-                
-                matches.Add(nearbyTile);
-                if(nearbyTile.IsPowerUpTile())
-                    powerUps.Add(nearbyTile);
-                powerUp.Play(PowerUpAnimation.Bomb);
-            }
-        }
-    }
-    
-    [Serializable]
-    public class FreezePowerUp : PowerUp
-    {
-        [SerializeField] private float freezeTimeDuration = 5f;
-        
-        public void FreezeTime() 
-        {
-            if(GameManager.Instance != null)
-                GameManager.Instance.RequestFreezeTimeFor(freezeTimeDuration);
-        }
-    }
-    
 }

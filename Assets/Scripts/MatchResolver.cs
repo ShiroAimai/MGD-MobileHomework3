@@ -5,6 +5,19 @@ using Models;
 using UnityEngine;
 using Utils;
 
+public class MatchContext
+{
+    public List<TileController> _matches;
+    public List<TileController> _powerUps;
+    private MatchContext()
+    {
+    }
+
+    public static MatchContext Create(List<TileController> matches, List<TileController> powerUps)
+    {
+        return new MatchContext() { _matches = matches, _powerUps = powerUps};
+    }
+}
 public class MatchCandidate
 {
     public Vector2 direction;
@@ -180,20 +193,20 @@ public static class MatchResolver
     private static MatchCandidate FindMatchInDirectionFromPositionForTile(TileController tile, Vector3 position,
         Vector2 castDir)
     {
-        Tile.TileType tileType = tile.GetTileType();
+        TileState.TileType tileType = tile.GetTileType();
 
         MatchCandidate matchCandidate = MatchCandidate.Create(castDir);
 
         RaycastHit2D hit = Physics2D.Raycast(position, castDir);
         while (hit.collider != null &&
                hit.collider.gameObject != tile.gameObject &&
-               (tileType == Tile.TileType.PowerUp ||
+               (tileType == TileState.TileType.PowerUp ||
                 hit.collider.gameObject.GetComponent<TileController>().GetTileType() == tileType ||
                 hit.collider.gameObject.GetComponent<TileController>().IsPowerUpTile())
         )
         {
             //take the first item found as default type if power up
-            if (tileType == Tile.TileType.PowerUp)
+            if (tileType == TileState.TileType.PowerUp)
                 tileType = hit.collider.gameObject.GetComponent<TileController>().GetTileType();
 
             matchCandidate.candidates.Add(hit.collider.gameObject);

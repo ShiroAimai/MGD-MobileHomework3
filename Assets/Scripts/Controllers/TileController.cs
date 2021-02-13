@@ -32,7 +32,7 @@ namespace Controllers
 
         
         private Animator animator;
-        private Tile model;
+        private TileState model;
 
         [SerializeField] private float shiftSpeed = 12f;
         [SerializeField] private float swapSpeed = 5f;
@@ -60,21 +60,17 @@ namespace Controllers
         #endregion
 
         #region Public
-        public void Init(int row, int column, Tile.TileType type, PowerUp.Type powerUpType = PowerUp.Type.None)
+        public void Init(int row, int column, TileEntry entry)
         {
-            model = Tile.Create(type, row, column, powerUpType);
+            model = TileState.Create(entry.type, row, column);
+            gameObject.GetComponentInChildren<SpriteRenderer>().sprite = entry.sprite;
         }
 
-        public Tile.TileType GetTileType()
+        public TileState.TileType GetTileType()
         {
             return model.type;
         }
         
-        public PowerUp.Type GetPowerUpTile()
-        {
-            return model.powerUpType;
-        }
-
         public BoardPoint GetBoardPoint()
         {
             return model.point;
