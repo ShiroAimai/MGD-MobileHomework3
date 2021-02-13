@@ -204,48 +204,13 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1001 &1407628472
+--- !u!1001 &723970646
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 3159192240478116003, guid: 5f787490001b9814a94803aa863ba653,
-        type: 3}
-      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 2138397675}
-    - target: {fileID: 3159192240478116003, guid: 5f787490001b9814a94803aa863ba653,
-        type: 3}
-      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: ExitGame
-      objectReference: {fileID: 0}
-    - target: {fileID: 3159192240833184597, guid: 5f787490001b9814a94803aa863ba653,
-        type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -0.000030517578
-      objectReference: {fileID: 0}
-    - target: {fileID: 4137506893062689454, guid: 5f787490001b9814a94803aa863ba653,
-        type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4137506894057778025, guid: 5f787490001b9814a94803aa863ba653,
-        type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -0.000030517578
-      objectReference: {fileID: 0}
-    - target: {fileID: 4137506894247864069, guid: 5f787490001b9814a94803aa863ba653,
-        type: 3}
-      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 2138397675}
-    - target: {fileID: 4137506894247864069, guid: 5f787490001b9814a94803aa863ba653,
-        type: 3}
-      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: LoadScene
-      objectReference: {fileID: 0}
     - target: {fileID: 4137506894476554630, guid: 5f787490001b9814a94803aa863ba653,
         type: 3}
       propertyPath: m_Pivot.x
@@ -356,11 +321,16 @@ PrefabInstance:
       propertyPath: m_Name
       value: Main Menu UI
       objectReference: {fileID: 0}
-    - target: {fileID: 4137506894599115777, guid: 5f787490001b9814a94803aa863ba653,
+    - target: {fileID: 6587564335207706327, guid: 5f787490001b9814a94803aa863ba653,
         type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 2138397675}
+    - target: {fileID: 8323672738737970569, guid: 5f787490001b9814a94803aa863ba653,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 2138397675}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 5f787490001b9814a94803aa863ba653, type: 3}
 --- !u!1 &2087803235

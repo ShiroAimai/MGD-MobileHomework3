@@ -1,16 +1,16 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using Utils;
+using Image = UnityEngine.UI.Image;
 
 namespace Ui
 {
     public class GameOverController : MonoBehaviour
     {
         [SerializeField] private GameObject gameOverPanel;
-        [SerializeField] private GameObject highScoreLabel;
         [SerializeField] private Text scoreText;
-        [SerializeField] private Color normalScoreColor;   
-        [SerializeField] private Color highScoreColor;   
+        [SerializeField] private Image scoreBackground;
+        [SerializeField] private Image highScoreBackground;
         
         public void GameOver(int gameScore)
         {
@@ -22,10 +22,12 @@ namespace Ui
         private void TryToSetNewHighScore(int gameScore)
         {
             int highScore = PlayerPrefs.GetInt(PlayerPrefHelper.HighscoreKey, 0);
-            scoreText.color = gameScore <= highScore ? normalScoreColor : highScoreColor;
-            if (gameScore <= highScore) return;
-            highScoreLabel.SetActive(true);
+
+            bool isNewHighScore = gameScore > highScore;
+            scoreBackground.enabled = !isNewHighScore; 
+            highScoreBackground.enabled = isNewHighScore;
             
+            if (!isNewHighScore) return;
             PlayerPrefs.SetInt(PlayerPrefHelper.HighscoreKey, gameScore);
         }
     }

@@ -1,14 +1,12 @@
 ﻿using Managers;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Ui
 {
     public class MenuLayerController : MonoBehaviour
     {
         [Header("Menu config")]
-        [SerializeField] private Image menuLayerBackground;
-        [SerializeField] private GameObject menuBackground;
+        [SerializeField] private GameObject background;
 
         [Header("Menu mode config")] 
         [SerializeField] private GameOverController gameOverController;
@@ -41,8 +39,7 @@ namespace Ui
 
         private void OnMenuEvent(bool isActive)
         {
-            menuLayerBackground.enabled = isActive;
-            menuBackground.SetActive(isActive);
+            background.SetActive(isActive);
         }
     }
 }

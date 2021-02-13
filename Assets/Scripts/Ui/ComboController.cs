@@ -1,4 +1,5 @@
-﻿using Managers;
+﻿using System.Collections.Generic;
+using Managers;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,6 +9,9 @@ namespace Ui
     public class ComboController : MonoBehaviour
     {
         [SerializeField] private Text comboTxt;
+        [SerializeField] private GameObject comboLabel;
+        [SerializeField] private List<string> comboValues;
+        
         private Animator _animator;
         private void Start()
         {
@@ -23,10 +27,11 @@ namespace Ui
 
         private void OnComboUpdate(int newComboStreak)
         {
-            bool isPlayerInACombo = newComboStreak > 1;
+            bool isPlayerInACombo = newComboStreak >= 1;
             if(isPlayerInACombo)
                 _animator.SetTrigger("Update");
-            comboTxt.text = isPlayerInACombo ? $"x{newComboStreak}" : "";
+            comboLabel.SetActive(isPlayerInACombo);
+            comboTxt.text = newComboStreak < comboValues.Count ? comboValues[newComboStreak] : comboValues[comboValues.Count - 1];
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿using Models;
+﻿using System.Collections.Generic;
+using System.Linq;
+using Models;
 using UnityEngine;
 using UnityEngine.UI;
 using Utils;
@@ -7,34 +9,32 @@ namespace Ui
 {
     public class PowerUpSelectionController : MonoBehaviour
     {
-        [SerializeField] private Image powerUp;
-        [SerializeField] private Sprite bomb;
-        [SerializeField] private Sprite freeze;
+        [SerializeField] private List<PowerUp.Type> powerUps;
+        [SerializeField] private Text selectedPowerUp;
         
-        private string currentSelection;
+        private int _currentSelectionIndex = 0;
         
         void Start()
         {
             var previouslySelectedPowerUp = PlayerPrefs.GetString(PlayerPrefHelper.PowerUpKey, null);
-            UpdateCurrentPowerUpSelection(string.IsNullOrEmpty(previouslySelectedPowerUp) ? PowerUp.Type.Bomb.ToPowerUpString() : previouslySelectedPowerUp);
+            if (!string.IsNullOrEmpty(previouslySelectedPowerUp))
+                _currentSelectionIndex = powerUps.IndexOf(PowerUp.FromString(previouslySelectedPowerUp)); 
+            UpdateCurrentPowerUpSelection();
         }
 
         public void UpdatePowerUpSelection()
         {
-            string bombPowerUpName =  PowerUp.Type.Bomb.ToPowerUpString();
-            string freezePowerUpName =  PowerUp.Type.Freeze.ToPowerUpString();
-            string nextPowerUpSelection = currentSelection == bombPowerUpName ? freezePowerUpName : bombPowerUpName;
-            UpdateCurrentPowerUpSelection(nextPowerUpSelection);
+            if (_currentSelectionIndex + 1 < powerUps.Count)
+                _currentSelectionIndex++;
+            else _currentSelectionIndex = 0;
+            UpdateCurrentPowerUpSelection();
         }
 
-        private void UpdateCurrentPowerUpSelection(string newSelection)
+        private void UpdateCurrentPowerUpSelection()
         {
-            currentSelection = newSelection;
-
-            PlayerPrefs.SetString(PlayerPrefHelper.PowerUpKey, currentSelection); //default init
-
-            var isBombPowerUp = currentSelection == PowerUp.Type.Bomb.ToPowerUpString();
-            powerUp.sprite = isBombPowerUp ? bomb : freeze;
+            var selectedPowerUpValue = powerUps[_currentSelectionIndex].ToPowerUpString();
+            PlayerPrefs.SetString(PlayerPrefHelper.PowerUpKey, selectedPowerUpValue); //default init
+            selectedPowerUp.text = selectedPowerUpValue.ToUpper();
         }
     }
 }

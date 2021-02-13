@@ -37,7 +37,7 @@ namespace Controllers
         [SerializeField] private float shiftSpeed = 12f;
         [SerializeField] private float swapSpeed = 5f;
         
-        private string SelectionAnim => "isSelected";
+        private string SelectionAnim = "isSelected";
         private Vector3 _targetPosition = Vector3.zero;
         private TileAction _requestedAction = TileAction.Idle;
         
