@@ -41,6 +41,7 @@ namespace Controllers
 
         private bool IsBoardBusy = false;
         private bool anyMatchToClear = false;
+        private int shiftingTileCounter = 0;
 
         /*
          * Routine used to normalize board    
@@ -196,6 +197,7 @@ namespace Controllers
                 }
             }
 
+            yield return new WaitUntil(() => shiftingTileCounter == 0);
             var wait = new WaitForSeconds(0.15f);//wait for all tiles to shift down
             
             for (int x = 0; x < xSize; x++)
@@ -208,7 +210,10 @@ namespace Controllers
                     break;
                 }
             }
-            yield return StartCoroutine(ClearAllMatchesForBoard());
+            
+            //StartCoroutine(ClearAllMatchesForBoard());
+            yield return new WaitForSeconds(0.35f);
+            ClearAllMatchesForBoard();
         }
 
         private void ShiftDown(int x, int yStart)
@@ -224,6 +229,7 @@ namespace Controllers
                 }
                 else
                 {
+                    shiftingTileCounter++;
                     TileController controller = _tiles[x, y];
 
                     Vector3 shiftedPosition = controller.transform.position;
@@ -289,10 +295,10 @@ namespace Controllers
             AudioManager.instance.PlayAudio(Clip.Swap);
         }
 
-        private IEnumerator ClearAllMatchesForBoard()
+        private void ClearAllMatchesForBoard()
         {
-            yield return new WaitForSeconds(.5f);
-            if (GameManager.Instance.IsGameOver) yield break;
+            //yield return new WaitForSeconds(.3f);
+            if (GameManager.Instance.IsGameOver) return;
             
             List<BoardPoint> tilesWithMatches = new List<BoardPoint>();
             //Check if new matches have been formed
@@ -365,6 +371,7 @@ namespace Controllers
                     TryToNormalizeBoard();
                     break;
                 case TileController.TileAction.Shift:
+                    shiftingTileCounter--;
                     tileController.Play(TileAnimation.ShiftEnd);
                     break;
                 default: return;
@@ -416,7 +423,6 @@ namespace Controllers
             if (!MatchResolver.ResolveMatch(matchedTile, out var matches)) return;
             
             //handle power up if any in matches or matched tile itself
-            //handler.HandlePowerUps(matchedTile, matches);
             ExecutePowerUpsBehavior(matchedTile, matches);
                 
             GameManager.Instance.UpdateScore(matches.Count + 1); //+1 from matched tile

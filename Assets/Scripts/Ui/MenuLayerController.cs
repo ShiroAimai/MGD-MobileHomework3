@@ -12,6 +12,16 @@ namespace Ui
         [SerializeField] private GameOverController gameOverController;
         [SerializeField] private GameObject pausePanel;
     
+        public void ReloadCurrentScene()
+        {
+            SceneTransitionManager.instance.ReloadScene();
+        }
+
+        public void BackToMenu()
+        {
+            SceneTransitionManager.instance.ReturnToMenu();
+        }
+        
         private void Start()
         {
             GameManager.Instance.onGameOver += OnGameOver;

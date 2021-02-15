@@ -24,8 +24,8 @@ namespace Managers
 		private AsyncOperation async;
 
 		void Awake() {
-			// Only 1 Game Manager can exist at a time
 			if (instance == null) {
+				DontDestroyOnLoad(gameObject);				
 				instance = this;
 				SceneManager.sceneLoaded += OnLevelFinishedLoading;
 			} else {
@@ -69,15 +69,14 @@ namespace Managers
 			faderObject.SetActive(false);
 		}
 
-		// Begin loading a scene with a specified string asynchronously
+		// load scene asynchronously
 		IEnumerator Load(string sceneName) {
 			async = SceneManager.LoadSceneAsync(sceneName);
 			async.allowSceneActivation = false;
 			yield return async;
 			isReturning = false;
 		}
-
-		// Allows the scene to change once it is loaded
+		
 		public void ActivateScene() {
 			async.allowSceneActivation = true;
 		}

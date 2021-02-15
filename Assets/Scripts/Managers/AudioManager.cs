@@ -17,8 +17,7 @@ public class AudioManager : MonoBehaviour {
  
 	[SerializeField]
 	private List<AudioClip> audioClips;
-
-	// Use this for initialization
+	
 	void Start () {
 		instance = GetComponent<AudioManager>();
 	}
