@@ -18,7 +18,7 @@ namespace Models
             for (int i = 0; i < hits.Length; ++i)
             {
                 var nearbyTile = hits[i]?.gameObject?.GetComponent<TileController>();
-                if(nearbyTile == null) continue;
+                if(nearbyTile == null) continue; //tile is already destroyed
                 if(nearbyTile == context._matchedTile || context._matches.Contains(nearbyTile)) continue; //already got that tile
                 
                 context._matches.Add(nearbyTile);

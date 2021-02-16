@@ -88,7 +88,8 @@ namespace Controllers
 
             for (int x = 0; x < xSize; x++)
                 for (int y = 0; y < ySize; y++)
-                    CreateTile(x, y);
+                    //during board creation we do not spawn power up in order to avoid not resolved matches
+                    CreateStandardTileOnly(x, y); 
         }
 
         private void CreateTile(int x, int y)
@@ -97,6 +98,25 @@ namespace Controllers
             float startY = transform.position.y;
 
             TileConfig tileConfigToSpawn = GetTileToSpawn();
+
+            var _tilesOffset = tileConfigToSpawn.prefab.GetComponentInChildren<SpriteRenderer>().bounds.size;
+            
+            float xOffset = _tilesOffset.x;
+            float yOffset = _tilesOffset.y;
+
+            GameObject newTile = Instantiate(tileConfigToSpawn.prefab,
+                new Vector3(startX + (xOffset * x), startY + (yOffset * y), 0),
+                tileConfigToSpawn.prefab.transform.rotation);
+            newTile.transform.parent = transform;
+            ConfigureTile(newTile, tileConfigToSpawn, x, y);
+        }
+        
+        private void CreateStandardTileOnly(int x, int y)
+        {
+            float startX = transform.position.x;
+            float startY = transform.position.y;
+
+            TileConfig tileConfigToSpawn = tiles.Where(tile => tile.enabled).First(tile => tile.config.powerUp == PowerUp.Type.None).config;
 
             var _tilesOffset = tileConfigToSpawn.prefab.GetComponentInChildren<SpriteRenderer>().bounds.size;
             
@@ -211,7 +231,6 @@ namespace Controllers
                 }
             }
             
-            //StartCoroutine(ClearAllMatchesForBoard());
             yield return new WaitForSeconds(0.35f);
             ClearAllMatchesForBoard();
         }
@@ -297,7 +316,6 @@ namespace Controllers
 
         private void ClearAllMatchesForBoard()
         {
-            //yield return new WaitForSeconds(.3f);
             if (GameManager.Instance.IsGameOver) return;
             
             List<BoardPoint> tilesWithMatches = new List<BoardPoint>();
@@ -316,7 +334,7 @@ namespace Controllers
             for (int i = 0; i < tilesWithMatches.Count; i++)
             {
                 var boardPoint = tilesWithMatches[i];
-                if (!IsTileValidAtPoint(boardPoint.x, boardPoint.y)) continue;
+                if (!IsTileValidAtPoint(boardPoint.x, boardPoint.y)) continue; //already included in another match
                 ClearAllMatchesForTile(_tiles[boardPoint.x, boardPoint.y]);
             }
             
@@ -424,22 +442,26 @@ namespace Controllers
             
             //handle power up if any in matches or matched tile itself
             ExecutePowerUpsBehavior(matchedTile, matches);
-                
-            GameManager.Instance.UpdateScore(matches.Count + 1); //+1 from matched tile
-                
+
+            int effectiveTilesForMatch = 0;
             for (int i = 0; i < matches.Count; ++i)
             {
                 if(matches[i] == null) continue;
                 BoardPoint matchBoardPoint = matches[i].GetBoardPoint();
+                if(!IsTileValidAtPoint(matchBoardPoint.x, matchBoardPoint.y)) continue;
+                effectiveTilesForMatch++;
                 ResetTileAtPoint(matchBoardPoint.x, matchBoardPoint.y);
                 matches[i].Play(TileAnimation.Explode);
             }
 
+            effectiveTilesForMatch++;
             BoardPoint matchedTileBoardPoint = matchedTile.GetBoardPoint();
             ResetTileAtPoint(matchedTileBoardPoint.x, matchedTileBoardPoint.y);
             matchedTile.SetAction(TileController.TileAction.Explode);
             matchedTile.Play(TileAnimation.Explode);
             AudioManager.instance.PlayAudio(Clip.Clear);
+
+            GameManager.Instance.UpdateScore(effectiveTilesForMatch);
         }
         #endregion
 
@@ -463,7 +485,7 @@ namespace Controllers
                 if(matchedTile.IsPowerUpTile())
                     powerUps.Add(matchedTile);
                 
-                MatchContext context = MatchContext.Create(matches, powerUps);
+                MatchContext context = MatchContext.Create(matchedTile, matches, powerUps);
                 for (int i = 0; i < powerUps.Count; ++i)
                     powerUps[i].GetComponent<PowerUp>()?.Execute(context);
 
