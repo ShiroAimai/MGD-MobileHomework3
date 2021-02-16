@@ -29,7 +29,6 @@ multiplier is reverted back to normal.
 
 All the following elements are customizable in the Editor:
 
-- **Bomb's range** : can be customized in bomb's prefab BombPowerUp component;
 - **Freeze's duration** : can be customized in freeze's prefab FreezePowerUp component;
 - **Points per tile in match** : can be customized in the GameManager;
 - **Game time** : can be customized in the GameManager;

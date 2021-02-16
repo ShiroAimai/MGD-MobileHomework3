@@ -7,13 +7,12 @@ namespace Controllers
     public class BombPowerUp : PowerUp
     {
         public static string BombAnimation = "Bomb";
+        private const float BombRange = 1.5f;
 
-        [SerializeField] private int bombRange = 1;
-        
         public override void Execute(MatchContext context)
         {
             Collider2D[] hits = new Collider2D[9];
-            Physics2D.OverlapBoxNonAlloc(gameObject.transform.position, Vector2.one * bombRange, 0f, hits);
+            Physics2D.OverlapBoxNonAlloc(gameObject.transform.position, Vector2.one * BombRange, 0f, hits);
 
             for (int i = 0; i < hits.Length; ++i)
             {
@@ -27,6 +26,12 @@ namespace Controllers
             }
             gameObject.GetComponent<TileController>().Play(BombAnimation);
 
+        }
+
+        private void OnDrawGizmos()
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireCube(gameObject.transform.position, Vector2.one * BombRange);
         }
     }
 }
