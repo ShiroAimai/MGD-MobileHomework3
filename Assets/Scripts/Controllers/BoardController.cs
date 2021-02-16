@@ -74,7 +74,7 @@ namespace Controllers
             
             if(checkRoutine != null)
                 StopCoroutine(checkRoutine);
-            checkRoutine = StartCoroutine(CheckIfAnyMovesIsPossibleOnBoard());
+            checkRoutine = StartCoroutine(IsGameOver());
         }
         
         /**
@@ -86,37 +86,27 @@ namespace Controllers
         {
             _tiles = new TileController[xSize, ySize];
 
-            for (int x = 0; x < xSize; x++)
-                for (int y = 0; y < ySize; y++)
-                    //during board creation we do not spawn power up in order to avoid not resolved matches
-                    CreateStandardTileOnly(x, y);
+            bool boardEstablished = false;
+            while (!boardEstablished)
+            {
+                ClearBoard();
+                for (int x = 0; x < xSize; x++)
+                    for (int y = 0; y < ySize; y++)
+                        //during board creation we do not spawn power up in order to avoid not resolved matches
+                        CreateTile(x, y, true);
+
+                boardEstablished = AnyMovesIsPossibleOnBoard();
+            }
         }
 
-        private void CreateTile(int x, int y)
+        private void CreateTile(int x, int y, bool isCreatingBoard)
         {
             float startX = transform.position.x;
             float startY = transform.position.y;
 
-            TileConfig tileConfigToSpawn = GetTileToSpawn();
-
-            var _tilesOffset = tileConfigToSpawn.prefab.GetComponentInChildren<SpriteRenderer>().bounds.size;
-            
-            float xOffset = _tilesOffset.x;
-            float yOffset = _tilesOffset.y;
-
-            GameObject newTile = Instantiate(tileConfigToSpawn.prefab,
-                new Vector3(startX + (xOffset * x), startY + (yOffset * y), 0),
-                tileConfigToSpawn.prefab.transform.rotation);
-            newTile.transform.parent = transform;
-            ConfigureTile(newTile, tileConfigToSpawn, x, y);
-        }
-        
-        private void CreateStandardTileOnly(int x, int y)
-        {
-            float startX = transform.position.x;
-            float startY = transform.position.y;
-
-            TileConfig tileConfigToSpawn = tiles.Where(tile => tile.enabled).First(tile => tile.config.powerUp == PowerUp.Type.None).config;
+            TileConfig tileConfigToSpawn = isCreatingBoard ? 
+                tiles.Where(tile => tile.enabled).First(tile => tile.config.powerUp == PowerUp.Type.None).config
+                : GetTileToSpawn();
 
             var _tilesOffset = tileConfigToSpawn.prefab.GetComponentInChildren<SpriteRenderer>().bounds.size;
             
@@ -200,6 +190,8 @@ namespace Controllers
                 {
                     if (!IsTileValidAtPoint(x, y)) continue;
                     _tiles[x, y].onActionCompleted -= ProcessEndActionCallback;
+                    if(_tiles[x, y].gameObject)
+                        Destroy(_tiles[x, y].gameObject);
                     ResetTileAtPoint(x, y);
                 }
             }
@@ -266,7 +258,7 @@ namespace Controllers
         private void Refill(int xStart, int yStart)
         {
             for (int y = yStart; y < ySize; y++)
-                CreateTile(xStart, y);
+                CreateTile(xStart, y, false);
         }
 
         private bool TryToSwapSelectedWith(TileController otherTile)
@@ -341,9 +333,8 @@ namespace Controllers
             DoBoardCheck();
         }
 
-        private IEnumerator CheckIfAnyMovesIsPossibleOnBoard()
+        private bool AnyMovesIsPossibleOnBoard()
         {
-            yield return new WaitForSeconds(.2f);
             bool anyAvailableMatch = false;
             for (int x = 0; x < xSize && !anyAvailableMatch; x++)
             {
@@ -364,13 +355,23 @@ namespace Controllers
                 }
             }
 
-            //re-enable user interaction with board
-            IsBoardBusy = false;
-            
-            Debug.Log("GameOver " + !anyAvailableMatch);
+            return anyAvailableMatch;
+        }
+        private IEnumerator IsGameOver()
+        {
+            yield return new WaitForSeconds(.2f);
 
+            bool anyAvailableMatch = AnyMovesIsPossibleOnBoard();
+            
             if (!anyAvailableMatch)
                 GameManager.Instance.GameOver();
+            else
+            {
+                //re-enable user interaction with board
+                IsBoardBusy = false;
+            }
+
+            Debug.Log("GameOver " + !anyAvailableMatch);
         }
         #endregion
 
