@@ -7,15 +7,16 @@ using Utils;
 
 public class MatchContext
 {
+    public TileController _matchedTile;
     public List<TileController> _matches;
     public List<TileController> _powerUps;
     private MatchContext()
     {
     }
 
-    public static MatchContext Create(List<TileController> matches, List<TileController> powerUps)
+    public static MatchContext Create(TileController matchedTile, List<TileController> matches, List<TileController> powerUps)
     {
-        return new MatchContext() { _matches = matches, _powerUps = powerUps};
+        return new MatchContext() { _matchedTile = matchedTile, _matches = matches, _powerUps = powerUps};
     }
 }
 public class MatchCandidate

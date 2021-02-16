@@ -19,10 +19,10 @@ namespace Models
             {
                 var nearbyTile = hits[i]?.gameObject?.GetComponent<TileController>();
                 if(nearbyTile == null) continue;
-                if(context._matches.Contains(nearbyTile)) continue; //already got that tile
+                if(nearbyTile == context._matchedTile || context._matches.Contains(nearbyTile)) continue; //already got that tile
                 
                 context._matches.Add(nearbyTile);
-                if(nearbyTile.IsPowerUpTile())
+                if (nearbyTile.IsPowerUpTile() && !context._powerUps.Contains(nearbyTile))
                     context._powerUps.Add(nearbyTile);
                 gameObject.GetComponent<TileController>().Play(PowerUpAnimation.Bomb);
             }
