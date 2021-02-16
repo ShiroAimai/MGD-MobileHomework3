@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using Controllers;
 using UnityEngine;
 
-namespace Models
+namespace Controllers
 {
     [Serializable]
     public class BombPowerUp : PowerUp
@@ -24,8 +22,9 @@ namespace Models
                 context._matches.Add(nearbyTile);
                 if (nearbyTile.IsPowerUpTile() && !context._powerUps.Contains(nearbyTile))
                     context._powerUps.Add(nearbyTile);
-                gameObject.GetComponent<TileController>().Play(PowerUpAnimation.Bomb);
             }
+            gameObject.GetComponent<TileController>().Play(PowerUpAnimation.Bomb);
+
         }
     }
 }

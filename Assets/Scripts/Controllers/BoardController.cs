@@ -89,7 +89,7 @@ namespace Controllers
             for (int x = 0; x < xSize; x++)
                 for (int y = 0; y < ySize; y++)
                     //during board creation we do not spawn power up in order to avoid not resolved matches
-                    CreateStandardTileOnly(x, y); 
+                    CreateStandardTileOnly(x, y);
         }
 
         private void CreateTile(int x, int y)
@@ -446,9 +446,9 @@ namespace Controllers
             int effectiveTilesForMatch = 0;
             for (int i = 0; i < matches.Count; ++i)
             {
-                if(matches[i] == null) continue;
+                if(matches[i] == null) continue; //tile already consumed by another match
                 BoardPoint matchBoardPoint = matches[i].GetBoardPoint();
-                if(!IsTileValidAtPoint(matchBoardPoint.x, matchBoardPoint.y)) continue;
+                if(!IsTileValidAtPoint(matchBoardPoint.x, matchBoardPoint.y)) continue; //tile already consumed by another match
                 effectiveTilesForMatch++;
                 ResetTileAtPoint(matchBoardPoint.x, matchBoardPoint.y);
                 matches[i].Play(TileAnimation.Explode);

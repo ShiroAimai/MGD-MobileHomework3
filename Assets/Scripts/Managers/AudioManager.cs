@@ -17,9 +17,17 @@ public class AudioManager : MonoBehaviour {
  
 	[SerializeField]
 	private List<AudioClip> audioClips;
-	
-	void Start () {
-		instance = GetComponent<AudioManager>();
+
+	private void Awake()
+	{
+		if (!instance)
+		{
+			instance = this;
+		}
+		else if (instance != this)
+		{
+			Destroy(gameObject);
+		}
 	}
 
 	public void PlayAudio(Clip audioClip) {

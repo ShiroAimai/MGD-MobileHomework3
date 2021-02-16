@@ -1,8 +1,9 @@
 ﻿using System;
 using Managers;
+using Models;
 using UnityEngine;
 
-namespace Models
+namespace Controllers
 {
     [Serializable]
     public class FreezePowerUp : PowerUp

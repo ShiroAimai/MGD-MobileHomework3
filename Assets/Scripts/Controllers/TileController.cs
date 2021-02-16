@@ -10,9 +10,9 @@ namespace Controllers
     public static class TileAnimation
     {
         
-        public static string Explode => "Explode";
-        public static string BlockSwap => "BlockSwap";
-        public static string ShiftEnd => "ShiftEnd";
+        public static string Explode = "Explode";
+        public static string BlockSwap = "BlockSwap";
+        public static string ShiftEnd = "ShiftEnd";
         
     }
     

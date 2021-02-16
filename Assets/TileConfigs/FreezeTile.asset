@@ -17,4 +17,4 @@ MonoBehaviour:
   - type: 6
     sprite: {fileID: 21300000, guid: 0cd39ee28c0d3be45b27d576235a95f3, type: 3}
   powerUp: 2
-  spawnProbability: 1
+  spawnProbability: 2
