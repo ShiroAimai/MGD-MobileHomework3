@@ -6,6 +6,8 @@ namespace Controllers
     [Serializable]
     public class BombPowerUp : PowerUp
     {
+        public static string BombAnimation = "Bomb";
+
         [SerializeField] private int bombRange = 1;
         
         public override void Execute(MatchContext context)
@@ -23,7 +25,7 @@ namespace Controllers
                 if (nearbyTile.IsPowerUpTile() && !context._powerUps.Contains(nearbyTile))
                     context._powerUps.Add(nearbyTile);
             }
-            gameObject.GetComponent<TileController>().Play(PowerUpAnimation.Bomb);
+            gameObject.GetComponent<TileController>().Play(BombAnimation);
 
         }
     }

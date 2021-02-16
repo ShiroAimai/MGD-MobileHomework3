@@ -4,11 +4,6 @@ namespace Controllers
 {
     public abstract class PowerUp : MonoBehaviour
     {
-        protected static class PowerUpAnimation
-        {
-            public static string Bomb = "Bomb";
-        }
-        
         public enum Type
         {
             None,
