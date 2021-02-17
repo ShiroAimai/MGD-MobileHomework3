@@ -32,17 +32,16 @@ namespace Controllers
         private readonly List<TileState.TileType> _currentAvailableTileTypes = new List<TileState.TileType>();
 
         [Header("Board config")]
-        [SerializeField] private int xSize;
-        [SerializeField] private int ySize;
+        [SerializeField][Range(3, 8)] private int xSize;
+        [SerializeField][Range(3, 8)] private int ySize;
 
         private TileController[,] _tiles;
-
         private TileController SelectedTile;
 
         private bool IsBoardBusy = false;
         private bool anyMatchToClear = false;
         private int shiftingTileCounter = 0;
-
+    
         /*
          * Routine used to normalize board    
          */
@@ -56,6 +55,7 @@ namespace Controllers
 
         private void Start()
         {
+            RepositionBoard();
             GetPreferredPowerUp();
             CreateBoard();
         }
@@ -68,6 +68,18 @@ namespace Controllers
         #endregion
 
         #region Board Handler
+
+        private void RepositionBoard()
+        {
+            var standardTilePrefab = tiles.Where(tile => tile.enabled).FirstOrDefault(tile => tile.config.powerUp == PowerUp.Type.None)
+                ?.config.prefab;
+            if(standardTilePrefab == null) return;
+            var offset = standardTilePrefab.GetComponentInChildren<SpriteRenderer>().bounds.extents;
+            var position = transform.position;
+            position.x -= offset.x * (xSize - 1);
+            position.y -= offset.y * (ySize - 1);
+            transform.position = position;
+        }
         private void DoBoardCheck()
         {
             if (anyMatchToClear) return;
@@ -199,6 +211,10 @@ namespace Controllers
 
         private IEnumerator FindNullTiles()
         {
+            //stop previous running checkRoutines, wait until the board has finished its logic
+            if(checkRoutine != null)
+                StopCoroutine(checkRoutine);
+            
             for (int x = 0; x < xSize; x++)
             {
                 for (int y = 0; y < ySize; y++)
@@ -359,7 +375,7 @@ namespace Controllers
         }
         private IEnumerator IsGameOver()
         {
-            yield return new WaitForSeconds(.2f);
+            yield return new WaitForSeconds(.5f);
 
             bool anyAvailableMatch = AnyMovesIsPossibleOnBoard();
             
