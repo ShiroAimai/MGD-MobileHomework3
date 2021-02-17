@@ -357,13 +357,13 @@ namespace Controllers
                 for (int y = 0; y < ySize && !anyAvailableMatch; y++)
                 {
                     if(!IsTileValidAtPoint(x, y)) continue;
-                    if (x - 1 > 0 && IsTileValidAtPoint(x - 1, y))
+                    if (x - 1 >= 0 && IsTileValidAtPoint(x - 1, y))
                         anyAvailableMatch = MatchResolver.AreThereAnyMatchesInPosition(_tiles[x, y], _tiles[x - 1, y].transform.position);
                     
                     if (x + 1 < xSize && IsTileValidAtPoint(x + 1, y))
                         anyAvailableMatch = anyAvailableMatch || MatchResolver.AreThereAnyMatchesInPosition(_tiles[x, y], _tiles[x + 1, y].transform.position);
                     
-                    if (y - 1 > 0 && IsTileValidAtPoint(x, y - 1))
+                    if (y - 1 >= 0 && IsTileValidAtPoint(x, y - 1))
                         anyAvailableMatch = anyAvailableMatch || MatchResolver.AreThereAnyMatchesInPosition(_tiles[x, y], _tiles[x, y - 1].transform.position);
                     
                     if (y + 1 < ySize && IsTileValidAtPoint(x, y + 1))
