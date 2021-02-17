@@ -38,15 +38,15 @@ namespace Controllers
         [SerializeField] private float swapSpeed = 5f;
         
         private string SelectionAnim = "isSelected";
-        private Vector3 _targetPosition = Vector3.zero;
+        private Vector3 _targetPosition;
         private TileAction _requestedAction = TileAction.Idle;
         
         #region Lifecycle
         void Awake()
         {
             animator = GetComponent<Animator>();
+            _targetPosition = transform.position;
         }
-        
         private void FixedUpdate()
         {
             TryToPerformMoveAction(Time.fixedDeltaTime);
@@ -129,7 +129,7 @@ namespace Controllers
         private void TryToPerformMoveAction(float deltaTime)
         {
             //in order to perform a move action [_targetPosition] needs to be assigned a value
-            if (_requestedAction == TileAction.Idle || _targetPosition == Vector3.zero) return;
+            if (_requestedAction != TileAction.Shift && _requestedAction != TileAction.Swap) return;
             if (transform.position != _targetPosition)
             {
                 float speed = _requestedAction == TileAction.Swap ? swapSpeed : shiftSpeed;
@@ -140,7 +140,7 @@ namespace Controllers
             {
                 var lastAction = _requestedAction;
                 _requestedAction = TileAction.Idle;
-                _targetPosition = Vector3.zero;
+                _targetPosition = transform.position;
                 onActionCompleted?.Invoke(lastAction, this);
             }
         }
