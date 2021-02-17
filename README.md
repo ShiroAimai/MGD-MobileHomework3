@@ -35,5 +35,5 @@ All the following elements are customizable in the Editor:
 - **Combo time to reset** : can be customized in the GameManager;
 - **Points per combo / combo multiplier** : can be customized in the GameManager;
 - **Available tile's type / power up** : can be customized in the BoardController;
-- **Board's size** : can be customized in the BoardController;
+- **Board's size** : can be customized in the BoardController. Size values must be in interval [3, 8];
 
